@@ -133,6 +133,8 @@ export function auditNearTransaction(input) {
   }
   if (typeof input.execution_outcome.id !== 'string' || !input.execution_outcome.id) {
     diagnostics.push('root execution outcome is missing an outcome ID');
+  } else if (input.execution_outcome.id !== transaction.hash) {
+    diagnostics.push('root execution outcome ID does not match transaction hash');
   }
   if (!Array.isArray(rootOutcome.logs)) diagnostics.push('root outcome logs must be an array');
   if (!Array.isArray(rootOutcome.receipt_ids)) {
@@ -251,4 +253,45 @@ export function auditNearTransaction(input) {
     diagnostics,
     semantics: 'Observational transaction and receipt execution evidence only. Function-call labels are calls, not proof of token transfer. This report does not verify payout, tax, or rewards completion.',
   };
+}
+
+/** Retrieve exactly one matching transaction from FastNear and audit it observationally. */
+export async function readFastNearTransactionAudit({
+  transactionHash,
+  apiKey = process.env.FASTNEAR_API_KEY,
+  fetchImpl = globalThis.fetch,
+} = {}) {
+  if (typeof transactionHash !== 'string' || transactionHash.trim().length === 0) {
+    throw new TypeError('transactionHash must be a non-empty string');
+  }
+  if (typeof fetchImpl !== 'function') throw new TypeError('fetch implementation must be a function');
+
+  const headers = { 'content-type': 'application/json' };
+  if (apiKey) headers.authorization = `Bearer ${apiKey}`;
+  const response = await fetchImpl('https://tx.main.fastnear.com/v0/transactions', {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({ tx_hashes: [transactionHash] }),
+  });
+  if (!response?.ok) {
+    throw new Error(`FastNear transaction lookup failed with HTTP ${response?.status ?? 'unknown'}`);
+  }
+
+  let body;
+  try {
+    body = await response.json();
+  } catch {
+    throw new Error('FastNear transaction lookup returned invalid JSON');
+  }
+  if (!isRecord(body) || !Array.isArray(body.transactions)) {
+    throw new Error('FastNear response transactions must be an array');
+  }
+
+  const matches = body.transactions.filter((item) => item?.transaction?.hash === transactionHash);
+  if (matches.length !== 1) {
+    throw new Error(matches.length === 0
+      ? 'FastNear response has no matching transaction'
+      : 'FastNear response must contain exactly one matching transaction');
+  }
+  return auditNearTransaction(matches[0]);
 }

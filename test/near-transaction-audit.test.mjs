@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { auditNearTransaction } from '../src/near-transaction-audit.mjs';
+import { auditNearTransaction, readFastNearTransactionAudit } from '../src/near-transaction-audit.mjs';
 
 const transaction = {
   transaction: { hash: 'tx', signer_id: 'alice.near', receiver_id: 'app.near', actions: [] },
@@ -340,4 +340,93 @@ test('rejects malformed root and receipt status variant payloads without validat
       assert.match(report.diagnostics.join(' '), /status/i);
     }
   }
+});
+
+test('marks a root execution outcome ID that differs from the transaction hash partial', () => {
+  const mismatched = structuredClone(transaction);
+  mismatched.execution_outcome.id = 'different-root-id';
+  const report = auditNearTransaction(mismatched);
+  assert.equal(report.status, 'partial');
+  assert.match(report.diagnostics.join(' '), /root execution outcome ID.*transaction hash/i);
+});
+
+test('looks up and audits exactly the requested FastNear transaction', async () => {
+  let request;
+  const report = await readFastNearTransactionAudit({
+    transactionHash: 'tx', apiKey: 'secret-test-key',
+    fetchImpl: async (url, options) => {
+      request = { url, options };
+      return { ok: true, json: async () => ({ transactions: [structuredClone(transaction)] }) };
+    },
+  });
+  assert.equal(request.url, 'https://tx.main.fastnear.com/v0/transactions');
+  assert.equal(request.options.method, 'POST');
+  assert.deepEqual(JSON.parse(request.options.body), { tx_hashes: ['tx'] });
+  assert.equal(request.options.headers['content-type'], 'application/json');
+  assert.equal(request.options.headers.authorization, 'Bearer secret-test-key');
+  assert.equal(report.transaction.hash, 'tx');
+  assert.doesNotMatch(JSON.stringify(report), /secret-test-key/);
+});
+
+test('does not send authorization when FastNear API key is absent', async () => {
+  let request;
+  await readFastNearTransactionAudit({
+    transactionHash: 'tx', apiKey: '',
+    fetchImpl: async (_url, options) => {
+      request = options;
+      return { ok: true, json: async () => ({ transactions: [structuredClone(transaction)] }) };
+    },
+  });
+  assert.equal(Object.hasOwn(request.headers, 'authorization'), false);
+});
+
+test('rejects FastNear HTTP failures without exposing response bodies or credentials', async () => {
+  await assert.rejects(readFastNearTransactionAudit({
+    transactionHash: 'tx', apiKey: 'secret-test-key',
+    fetchImpl: async () => ({ ok: false, status: 503, text: async () => 'secret response body' }),
+  }), (error) => {
+    assert.match(error.message, /HTTP 503/);
+    assert.doesNotMatch(error.message, /secret-test-key|secret response body/);
+    return true;
+  });
+});
+
+test('rejects malformed FastNear JSON', async () => {
+  await assert.rejects(readFastNearTransactionAudit({
+    transactionHash: 'tx', fetchImpl: async () => ({ ok: true, json: async () => { throw new SyntaxError('bad json'); } }),
+  }), /JSON/i);
+});
+
+test('rejects a missing or malformed FastNear transactions array', async () => {
+  for (const body of [{}, { transactions: 'bad' }]) {
+    await assert.rejects(readFastNearTransactionAudit({
+      transactionHash: 'tx', fetchImpl: async () => ({ ok: true, json: async () => body }),
+    }), /transactions.*array/i);
+  }
+});
+
+test('rejects missing and different-hash FastNear transactions', async () => {
+  for (const transactions of [[], [{ ...structuredClone(transaction), transaction: { ...transaction.transaction, hash: 'other' } }]]) {
+    await assert.rejects(readFastNearTransactionAudit({
+      transactionHash: 'tx', fetchImpl: async () => ({ ok: true, json: async () => ({ transactions }) }),
+    }), /matching transaction/i);
+  }
+});
+
+test('rejects duplicate matching FastNear transactions', async () => {
+  await assert.rejects(readFastNearTransactionAudit({
+    transactionHash: 'tx', fetchImpl: async () => ({ ok: true, json: async () => ({ transactions: [structuredClone(transaction), structuredClone(transaction)] }) }),
+  }), /exactly one/i);
+});
+
+test('validates transaction hashes without normalizing them', async () => {
+  for (const transactionHash of ['', '   ', 12, null]) {
+    await assert.rejects(readFastNearTransactionAudit({
+      transactionHash, fetchImpl: async () => { throw new Error('fetch should not run'); },
+    }), /non-empty string/i);
+  }
+});
+
+test('rejects a non-function FastNear fetch implementation', async () => {
+  await assert.rejects(readFastNearTransactionAudit({ transactionHash: 'tx', fetchImpl: null }), /fetch.*function/i);
 });
