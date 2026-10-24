@@ -15,10 +15,15 @@ function receiptActions(receipt, successful) {
   const actions = receipt?.receipt?.Action?.actions;
   if (!Array.isArray(actions)) return [];
   const observed = [];
-  for (const action of actions) {
+  for (const [actionIndex, action] of actions.entries()) {
     if (!isRecord(action)) continue;
     if (Object.hasOwn(action, 'Transfer')) {
-      if (successful) observed.push({ type: 'native_transfer', observation: 'successful_receipt_action' });
+      if (successful) observed.push({
+        type: 'native_transfer', observation: 'successful_receipt_action',
+        amount: typeof action.Transfer?.deposit === 'string' ? action.Transfer.deposit : null,
+        destination: receipt.receiver_id ?? null,
+        actionIndex,
+      });
       continue;
     }
     const call = action.FunctionCall;
@@ -27,6 +32,19 @@ function receiptActions(receipt, successful) {
     }
   }
   return observed;
+}
+
+function transactionActions(transaction, successful) {
+  if (!Array.isArray(transaction?.actions)) return [];
+  return transaction.actions.flatMap((action, actionIndex) => {
+    if (!isRecord(action) || !Object.hasOwn(action, 'Transfer') || !successful) return [];
+    return [{
+      type: 'native_transfer', observation: 'successful_transaction_action',
+      amount: typeof action.Transfer?.deposit === 'string' ? action.Transfer.deposit : null,
+      destination: transaction.receiver_id ?? null,
+      actionIndex,
+    }];
+  });
 }
 
 function rootProvenance(transaction, execution) {
@@ -39,6 +57,7 @@ function rootProvenance(transaction, execution) {
     logs: Array.isArray(execution?.outcome?.logs)
       ? [...execution.outcome.logs]
       : (execution?.outcome?.logs ?? null),
+    actions: transactionActions(transaction, isSuccessful(execution?.outcome)),
   };
 }
 
@@ -121,17 +140,29 @@ export function auditNearTransaction(input) {
     });
   }
 
+  const actionDiagnosticCount = diagnostics.length - (dataReceiptsValid ? 0 : 1);
+  const dataReceiptIds = new Set();
   for (const entry of dataEntries) {
-    const receipt = entry?.receipt;
-    if (!isRecord(receipt) || typeof receipt.receipt_id !== 'string' || !receipt.receipt_id) {
-      diagnostics.push('data receipt collection contains an entry without receipt.receipt_id');
+    const data = entry?.receipt?.Data;
+    if (!isRecord(entry) || typeof entry.receipt_id !== 'string' || !entry.receipt_id
+      || !isRecord(entry.receipt) || !isRecord(data)
+      || typeof data.data_id !== 'string' || !data.data_id) {
+      diagnostics.push('data receipt collection contains a malformed FastNear Data receipt');
       continue;
     }
-    receiptIdEntries.push(receipt.receipt_id);
+    if (dataReceiptIds.has(entry.receipt_id)) {
+      diagnostics.push(`data receipt collection contains duplicate receipt ID ${entry.receipt_id}`);
+      continue;
+    }
+    dataReceiptIds.add(entry.receipt_id);
     dataReceipts.push({
-      receiptId: receipt.receipt_id,
-      predecessorId: receipt.predecessor_id ?? null,
-      receiverId: receipt.receiver_id ?? null,
+      receiptId: entry.receipt_id,
+      predecessorId: entry.predecessor_id ?? null,
+      receiverId: entry.receiver_id ?? null,
+      blockHeight: Number.isSafeInteger(entry.block_height) ? entry.block_height : null,
+      blockHash: typeof entry.block_hash === 'string' ? entry.block_hash : null,
+      dataId: data.data_id,
+      isPromiseResume: typeof data.is_promise_resume === 'boolean' ? data.is_promise_resume : null,
     });
   }
 
@@ -156,12 +187,12 @@ export function auditNearTransaction(input) {
   const referencedIds = new Set(references);
   const orphanIds = [...knownReceiptIds].filter((id) => !referencedIds.has(id)).sort();
   const graphComplete = missingIds.length === 0 && duplicateIds.length === 0
-    && mismatchedIds.length === 0 && orphanIds.length === 0 && diagnostics.length === 0;
+    && mismatchedIds.length === 0 && orphanIds.length === 0 && actionDiagnosticCount === 0;
 
   return {
     schemaVersion: '1.0',
     inputFormat: 'fastnear-transaction',
-    status: graphComplete && !malformedCollections ? 'complete' : 'partial',
+    status: graphComplete && diagnostics.length === 0 && !malformedCollections ? 'complete' : 'partial',
     transaction: {
       hash: transaction.hash,
       signerId: transaction.signer_id ?? null,

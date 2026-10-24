@@ -115,13 +115,13 @@ test('marks absent or malformed required receipt collections partial', () => {
   assert.match(report.diagnostics.join(' '), /receipts must be an array/);
 });
 
-test('preserves raw success statuses, logs, provenance, and separate data receipt nodes', () => {
+test('preserves raw success statuses, logs, provenance, and FastNear-shaped data receipt nodes', () => {
   const observed = {
-    transaction: { hash: 'tx-main', signer_id: 'alice.near', receiver_id: 'app.near' },
+    transaction: { hash: 'tx-main', signer_id: 'alice.near', receiver_id: 'app.near', actions: [{ Transfer: { deposit: '7' } }] },
     status: { SuccessValue: '' },
     execution_outcome: {
       id: 'tx-main', block_height: 80, block_hash: 'block-root',
-      outcome: { status: { SuccessReceiptId: 'native' }, receipt_ids: ['native', 'ft', 'data'], logs: ['root raw log'] },
+      outcome: { status: { SuccessReceiptId: 'native' }, receipt_ids: ['native'], logs: ['root raw log'] },
     },
     receipts: [
       {
@@ -131,7 +131,7 @@ test('preserves raw success statuses, logs, provenance, and separate data receip
         },
         execution_outcome: {
           id: 'native', block_height: 81, block_hash: 'block-1',
-          outcome: { status: { SuccessValue: '' }, receipt_ids: [], logs: ['native raw log'] },
+          outcome: { status: { SuccessValue: '' }, receipt_ids: ['ft'], logs: ['native raw log'] },
         },
       },
       {
@@ -151,7 +151,11 @@ test('preserves raw success statuses, logs, provenance, and separate data receip
         },
       },
     ],
-    data_receipts: [{ receipt: { receipt_id: 'data', predecessor_id: 'app.near', receiver_id: 'alice.near' } }],
+    data_receipts: [{
+      receipt_id: 'data', predecessor_id: 'app.near', receiver_id: 'alice.near',
+      block_height: 81, block_hash: 'data-block',
+      receipt: { Data: { data_id: 'data-id', data: 'private-payload', is_promise_resume: false } },
+    }],
   };
   const report = auditNearTransaction(observed);
   assert.equal(report.status, 'complete');
@@ -160,14 +164,33 @@ test('preserves raw success statuses, logs, provenance, and separate data receip
   assert.equal(report.rootExecution.blockHeight, 80);
   assert.deepEqual(report.rootExecution.executionStatus, { SuccessReceiptId: 'native' });
   assert.deepEqual(report.rootExecution.logs, ['root raw log']);
-  assert.deepEqual(report.actionReceipts[0].actions, [{ type: 'native_transfer', observation: 'successful_receipt_action' }]);
+  assert.deepEqual(report.rootExecution.actions, [{ type: 'native_transfer', observation: 'successful_transaction_action', amount: '7', destination: 'app.near', actionIndex: 0 }]);
+  assert.deepEqual(report.actionReceipts[0].actions, [{ type: 'native_transfer', observation: 'successful_receipt_action', amount: '10', destination: 'bob.near', actionIndex: 0 }]);
   assert.deepEqual(report.actionReceipts[1].actions, [{ type: 'function_call', methodName: 'ft_transfer', observation: 'call_only_not_transfer_proof' }]);
   assert.deepEqual(report.actionReceipts[0].executionStatus, { SuccessValue: '' });
-  assert.deepEqual(report.dataReceipts.map(({ receiptId }) => receiptId), ['data']);
+  assert.deepEqual(report.dataReceipts, [{ receiptId: 'data', predecessorId: 'app.near', receiverId: 'alice.near', blockHeight: 81, blockHash: 'data-block', dataId: 'data-id', isPromiseResume: false }]);
   assert.deepEqual(report.graph, { complete: true, missingIds: [], duplicateIds: [], mismatchedIds: [], orphanIds: [] });
-  assert.doesNotMatch(JSON.stringify(report), /hidden\.near|hidden/);
+  assert.doesNotMatch(JSON.stringify(report), /hidden\.near|hidden|private-payload/);
   assert.match(report.semantics, /observational/i);
   assert.doesNotMatch(report.semantics, /payout.*completed|tax.*completed|rewards.*completed/i);
+});
+
+test('keeps malformed and duplicate data receipts visible without corrupting the action graph', () => {
+  const report = auditNearTransaction({
+    transaction: { hash: 'tx', receiver_id: 'app.near' },
+    execution_outcome: { id: 'tx', outcome: { receipt_ids: ['r1'], logs: [], status: 'SuccessValue' } },
+    receipts: [completeReceipt('r1')],
+    data_receipts: [
+      { receipt_id: 'data', predecessor_id: 'app.near', receiver_id: 'alice.near', receipt: { Data: { data_id: 'd1' } } },
+      { receipt_id: 'data', predecessor_id: 'app.near', receiver_id: 'alice.near', receipt: { Data: { data_id: 'd1' } } },
+      { receipt_id: 'broken', receipt: { Action: {} } },
+    ],
+  });
+  assert.equal(report.status, 'partial');
+  assert.equal(report.graph.complete, true);
+  assert.deepEqual(report.dataReceipts.map(({ receiptId }) => receiptId), ['data']);
+  assert.match(report.diagnostics.join(' '), /duplicate receipt ID data/i);
+  assert.match(report.diagnostics.join(' '), /malformed FastNear Data receipt/i);
 });
 
 test('marks malformed action lists partial while retaining receipt provenance', () => {
