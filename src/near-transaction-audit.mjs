@@ -261,8 +261,9 @@ export async function readFastNearTransactionAudit({
   apiKey = process.env.FASTNEAR_API_KEY,
   fetchImpl = globalThis.fetch,
 } = {}) {
-  if (typeof transactionHash !== 'string' || transactionHash.trim().length === 0) {
-    throw new TypeError('transactionHash must be a non-empty string');
+  if (typeof transactionHash !== 'string' || transactionHash.trim().length === 0
+    || transactionHash.trim() !== transactionHash) {
+    throw new TypeError('transactionHash must be a non-empty string without surrounding whitespace');
   }
   if (typeof fetchImpl !== 'function') throw new TypeError('fetch implementation must be a function');
 

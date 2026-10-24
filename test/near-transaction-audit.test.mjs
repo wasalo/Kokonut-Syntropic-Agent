@@ -368,6 +368,46 @@ test('looks up and audits exactly the requested FastNear transaction', async () 
   assert.doesNotMatch(JSON.stringify(report), /secret-test-key/);
 });
 
+test('passes a valid public-shaped transaction hash through the request and audit unchanged', async () => {
+  const transactionHash = '7YwhbK9hK7QxY6yqKzqH2dQf9vL3mN8pR4sT6uV1wX23';
+  const matching = structuredClone(transaction);
+  matching.transaction.hash = transactionHash;
+  matching.execution_outcome.id = transactionHash;
+  let request;
+  const report = await readFastNearTransactionAudit({
+    transactionHash,
+    fetchImpl: async (_url, options) => {
+      request = options;
+      return { ok: true, json: async () => ({ transactions: [matching] }) };
+    },
+  });
+
+  assert.deepEqual(JSON.parse(request.body), { tx_hashes: [transactionHash] });
+  assert.equal(report.transaction.hash, transactionHash);
+});
+
+test('rejects an exact-hash matching response with a malformed execution outcome', async () => {
+  const malformed = structuredClone(transaction);
+  delete malformed.execution_outcome.outcome;
+
+  await assert.rejects(readFastNearTransactionAudit({
+    transactionHash: 'tx',
+    fetchImpl: async () => ({ ok: true, json: async () => ({ transactions: [malformed] }) }),
+  }), /missing execution_outcome\.outcome/i);
+});
+
+test('rejects surrounding whitespace in transaction hashes before fetching', async () => {
+  let fetchCalled = false;
+  await assert.rejects(readFastNearTransactionAudit({
+    transactionHash: ' tx ',
+    fetchImpl: async () => {
+      fetchCalled = true;
+      throw new Error('fetch should not run');
+    },
+  }), /non-empty string/i);
+  assert.equal(fetchCalled, false);
+});
+
 test('does not send authorization when FastNear API key is absent', async () => {
   let request;
   await readFastNearTransactionAudit({
