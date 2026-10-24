@@ -1,0 +1,28 @@
+{
+  "schema_version": "1.0",
+  "agent_id": "9ddfc9c8-c871-4c12-b0a6-70e86bc8cc89",
+  "display_name": "Example Kokonut Syntropic Agent",
+  "runtime": "Hermes",
+  "operator_entity_ref": "<pending-approved-entity-reference>",
+  "ki_agent_identity_ref": "<deferred-until-ki-refactor>",
+  "near_hub_contract": "<pending-protocol-approval>",
+  "policy_hash": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "capability_manifest_hash": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+  "chain_instances": [
+    {
+      "namespace": "eip155",
+      "chain_id": "8453",
+      "instance_ref": "virtuals-base-example",
+      "token_ref": "<verify-base-token-contract>",
+      "role": "commerce"
+    },
+    {
+      "namespace": "near",
+      "chain_id": "mainnet",
+      "instance_ref": "near-hub-example",
+      "token_ref": "<pending-nep-141-account>",
+      "role": "orchestration"
+    }
+  ],
+  "status": "active"
+}

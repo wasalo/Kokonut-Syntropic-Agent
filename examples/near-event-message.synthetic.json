@@ -1,0 +1,33 @@
+{
+  "exampleOnly": true,
+  "block": {
+    "header": {
+      "height": 500,
+      "hash": "near-lake-block-hash"
+    }
+  },
+  "shards": [
+    {
+      "shard_id": 3,
+      "receipt_execution_outcomes": [
+        {
+          "receipt": {
+            "receipt_id": "receipt-abc",
+            "predecessor_id": "alice.near",
+            "receiver_id": "token.near"
+          },
+          "execution_outcome": {
+            "id": "receipt-abc",
+            "block_hash": "near-lake-block-hash",
+            "outcome": {
+              "executor_id": "token.near",
+              "logs": [
+                "EVENT_JSON:{\"standard\":\"nep141\",\"version\":\"1.0.0\",\"event\":\"ft_transfer\",\"data\":[{\"old_owner_id\":\"alice.near\",\"new_owner_id\":\"bob.near\",\"amount\":\"25\"}]}"
+              ]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

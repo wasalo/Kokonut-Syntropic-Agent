@@ -1,0 +1,14 @@
+{
+  "name": "kokonut-syntropic-agent",
+  "version": "0.1.0",
+  "private": true,
+  "description": "NEAR-anchored, chain-agnostic orchestration agent for Kokonut Network",
+  "type": "module",
+  "scripts": {
+    "test": "node --test",
+    "agent": "node src/cli.mjs"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

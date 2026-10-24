@@ -1,0 +1,18 @@
+{
+  "launchpad": "nearly.trade",
+  "network": "near:mainnet",
+  "pair_asset": "wrap.near",
+  "creator_share_bps": 6000,
+  "tax": {
+    "buy_bps": 300,
+    "sell_bps": 300,
+    "creator_bps": 8000,
+    "holders_bps": 1000,
+    "burn_bps": 1000
+  },
+  "token_name": "Kokonut Syntropic Agent — NEAR (provisional)",
+  "ticker": "TBD",
+  "creator_account": "<verify-governed-recipient-and-factory-caller>",
+  "launch_id": null,
+  "token_account": null
+}
