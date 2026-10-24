@@ -7,6 +7,7 @@ import { evaluateNearlyFactorySnapshot, readNearlyFactorySnapshot } from './near
 import { readNearlyEconomicsSnapshot } from './nearly-economics-observer.mjs';
 import { indexNearLakeBlock, indexNearLakeMessages } from './near-event-indexer.mjs';
 import { readFastNearEventLogPage } from './fastnear-event-history.mjs';
+import { readFastNearTransactionAudit } from './near-transaction-audit.mjs';
 
 const USAGE = [
   'Usage:',
@@ -17,6 +18,7 @@ const USAGE = [
   '  syntropic-agent near-economics <launchId>',
   '  syntropic-agent near-events <block-message.json> [accountId ...]',
   '  syntropic-agent near-account-events <accountId> [resumeToken]',
+  '  syntropic-agent near-tx-audit <transactionHash>',
 ].join('\n');
 
 function fail(message, code = 1) {
@@ -25,7 +27,19 @@ function fail(message, code = 1) {
 }
 
 const [command, arg, ...extraArgs] = process.argv.slice(2);
-if (command === 'near-events') {
+if (command === 'near-tx-audit') {
+  if (!arg || arg.trim() !== arg || extraArgs.length > 0) {
+    fail(USAGE, 2);
+  } else {
+    try {
+      const report = await readFastNearTransactionAudit({ transactionHash: arg });
+      process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
+      if (report.status === 'partial') process.exitCode = 1;
+    } catch (error) {
+      fail(`NEAR transaction audit failed: ${error instanceof Error ? error.message : 'provider or input error'}`);
+    }
+  }
+} else if (command === 'near-events') {
   if (!arg) {
     fail(USAGE, 2);
   } else {

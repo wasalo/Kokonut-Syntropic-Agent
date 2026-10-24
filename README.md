@@ -12,6 +12,7 @@ Current slices:
 - **Nearly launch-state observer:** read one launch's factory record, per-launch fee settings, tax view, token state, locker and DCL position at one pinned final block. It reports current state only; it does not index historical events or prove completed payouts.
 - **NEAR event-log batch indexer core:** parse `EVENT_JSON:` logs from caller-supplied, contiguous NEAR block messages compatible with the NEAR Lake streamer shape, preserve block/shard/execution/receipt/log provenance, and quarantine malformed event payloads. It does not infer tax/reward/burn/fee business meaning.
 - **FastNear account-event page reader:** query one paginated account-event page, hydrate transaction and receipt outcomes in batches, retain only logs emitted by the exact requested account, and return the provider's cursor plus any incomplete lookups. It is read-only and does not persist data.
+- **FastNear single-transaction receipt auditor:** retrieve and report one transaction's receipt graph, execution statuses, provenance, successful native `Transfer` observations, and call-only `ft_transfer` observations. It is read-only and observational.
 
 These are foundations, not complete epics or production integrations. The manifest does not establish identity or register anything on-chain. The factory observer does not inspect a launched token. The launch-state observer does not prove historical event completeness, completed treasury receipts, beneficiary control, legal signoff, or security approval. Event tooling currently processes caller-supplied block batches or one FastNear account-history page at a time; it is not a continuous, durable, full-history service.
 
@@ -39,6 +40,7 @@ npm run agent -- near-readiness
 npm run agent -- near-economics LAUNCH_ID
 npm run agent -- near-events examples/near-event-message.synthetic.json
 npm run agent -- near-account-events ACCOUNT_ID [RESUME_TOKEN]
+npm run agent -- near-tx-audit TRANSACTION_HASH
 ```
 
 `near-readiness` reads public NEAR mainnet factory state at a pinned final block. A blocking mismatch is printed as JSON and exits nonzero. The report is observational only and never authorizes a launch.
@@ -48,6 +50,8 @@ npm run agent -- near-account-events ACCOUNT_ID [RESUME_TOKEN]
 `near-events <message.json> [accountId ...]` parses local NEAR block-message JSON; input may be one message or an ordered JSON array of messages. Arrays must contain contiguous, increasing block heights. Optional account IDs filter by the emitting `executor_id`. The indexer validates the `EVENT_JSON:` envelope, preserves raw logs and block/shard/execution/receipt/log provenance, deduplicates event IDs, and quarantines malformed event JSON. It does not fetch NEAR block data, infer that an event represents tax/reward/burn/fee activity, reconstruct transaction trees, prove payouts, or write to KI. The checked-in example is synthetic and is not a Nearly launch or on-chain observation.
 
 `near-account-events ACCOUNT_ID [RESUME_TOKEN]` fetches one FastNear account-event page (20 entries by default), hydrates transaction/receipt execution outcomes in batches of up to 20 hashes, and filters logs to the exact emitting account. It returns `nextResumeToken` for the next page; rerun with that token to continue. A page with missing transaction lookups or rejected account rows is marked `partial` and exits nonzero. Set `FASTNEAR_API_KEY` in the process environment if you have one; the CLI never prints or stores it. Event logs and execution status remain observations: the command does not classify economics, verify payouts, or write to KI.
+
+`near-tx-audit TRANSACTION_HASH` makes one read-only FastNear transaction lookup and prints a JSON receipt-tree audit. The report preserves transaction/receipt block and execution provenance, statuses, and action-graph coverage; successful NEAR-native `Transfer` actions are reported as observations, while `ft_transfer` is reported as a function call only—not proof of a NEP-141 transfer. Missing or inconsistent receipt graph data is visible in diagnostics and yields `partial` status (JSON is still printed, with a nonzero exit). This single-transaction view does not establish historical completeness, payout/reward/tax completion, beneficiary control, or financial reconciliation, and it never writes to KI. Set `FASTNEAR_API_KEY` in the process environment if available; credentials and provider response bodies are not included in CLI error messages. Any live sample is schema/transport evidence only and must not be interpreted as Kokonut activity.
 
 `docs/decisions/0002-nearly-event-semantic-evidence.md` records a source-hash-anchored interpretation of selected Nearly tax, fee, burn, and holder events. It is documentation only: the raw readers still do not classify events, reconstruct payouts, or reconcile finances, and historical factory, token, and locker releases remain unclassified unless their deployed code is independently mapped.
 

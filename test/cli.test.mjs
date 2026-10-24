@@ -243,3 +243,63 @@ test('CLI reports malformed JSON and usage errors with a distinct usage exit cod
   assert.equal(usage.status, 2);
   assert.match(usage.stderr, /Usage:/);
 });
+
+function runNearAudit(status = 'SuccessValue') {
+  const dir = mkdtempSync(join(tmpdir(), 'syntropic-near-audit-'));
+  try {
+    const preloadPath = join(dir, 'mock-fastnear.mjs');
+    const mockCode = `
+      const expectedHash = 'test-transaction-hash';
+      globalThis.fetch = async (url, options) => {
+        if (url !== 'https://tx.main.fastnear.com/v0/transactions') throw new Error('unexpected endpoint');
+        if (options.method !== 'POST' || JSON.stringify(JSON.parse(options.body)) !== JSON.stringify({ tx_hashes: [expectedHash] })) throw new Error('unexpected request');
+        const transaction = {
+          hash: expectedHash, signer_id: 'sender.near', receiver_id: 'receiver.near',
+          actions: [{ Transfer: { deposit: '123' } }]
+        };
+        const result = {
+          transaction,
+          execution_outcome: {
+            id: expectedHash, block_height: 456, block_hash: 'block-hash',
+            outcome: { status: { ${status}: '' }, logs: [], receipt_ids: [] }
+          },
+          receipts: [], data_receipts: []
+        };
+        return { ok: true, status: 200, json: async () => ({ transactions: [result] }) };
+      };
+    `;
+    writeFileSync(preloadPath, mockCode);
+    return spawnSync(process.execPath, ['--import', preloadPath, cli, 'near-tx-audit', 'test-transaction-hash'], { encoding: 'utf8' });
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+}
+
+test('near-tx-audit prints valid JSON and observational native transfer evidence', () => {
+  const result = runNearAudit();
+  assert.equal(result.status, 0, result.stderr);
+  const report = JSON.parse(result.stdout);
+  assert.equal(report.transaction.hash, 'test-transaction-hash');
+  assert.equal(report.rootExecution.actions[0].amount, '123');
+  assert.match(report.semantics, /does not verify payout/);
+});
+
+test('near-tx-audit prints partial JSON and exits nonzero', () => {
+  const result = runNearAudit('UnrecognizedStatus');
+  assert.equal(result.status, 1);
+  assert.equal(JSON.parse(result.stdout).status, 'partial');
+});
+
+test('near-tx-audit rejects missing and extra arguments with usage before network access', () => {
+  const missing = spawnSync(process.execPath, [cli, 'near-tx-audit'], { encoding: 'utf8' });
+  assert.equal(missing.status, 2);
+  assert.match(missing.stderr, /near-tx-audit <transactionHash>/);
+
+  const extra = spawnSync(process.execPath, [cli, 'near-tx-audit', 'hash', 'extra'], { encoding: 'utf8' });
+  assert.equal(extra.status, 2);
+  assert.match(extra.stderr, /near-tx-audit <transactionHash>/);
+
+  const malformed = spawnSync(process.execPath, [cli, 'near-tx-audit', ' hash '], { encoding: 'utf8' });
+  assert.equal(malformed.status, 2);
+  assert.match(malformed.stderr, /near-tx-audit <transactionHash>/);
+});
