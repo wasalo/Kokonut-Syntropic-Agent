@@ -306,3 +306,38 @@ test('recognizes exact Failure as terminal without making the audit partial', ()
   assert.deepEqual(report.rootExecution.actions, []);
   assert.deepEqual(report.diagnostics, []);
 });
+
+test('rejects malformed root and receipt status variant payloads without validating transfers', () => {
+  const malformedStatuses = [
+    { SuccessValue: 42 },
+    { SuccessReceiptId: '' },
+    { SuccessReceiptId: 42 },
+    { Failure: 'failed' },
+    { Failure: null },
+    { SuccessValue: '', Failure: {} },
+  ];
+
+  for (const status of malformedStatuses) {
+    for (const where of ['root', 'receipt']) {
+      const malformed = structuredClone(transaction);
+      malformed.transaction.actions = where === 'root' ? [{ Transfer: { deposit: '5' } }] : [];
+      if (where === 'receipt') {
+        malformed.execution_outcome.outcome.receipt_ids = ['r1'];
+        malformed.receipts[0].receipt.receipt_id = 'r1';
+        malformed.receipts[0].receipt.receiver_id = 'bob.near';
+        malformed.receipts[0].receipt.receipt.Action.actions = [{ Transfer: { deposit: '5' } }];
+        malformed.receipts[0].execution_outcome.id = 'r1';
+        malformed.receipts[0].execution_outcome.outcome.status = status;
+      } else {
+        malformed.execution_outcome.outcome.status = status;
+      }
+
+      const report = auditNearTransaction(malformed);
+      assert.equal(report.status, 'partial', `${where} status ${JSON.stringify(status)}`);
+      const provenance = where === 'root' ? report.rootExecution : report.actionReceipts[0];
+      assert.deepEqual(provenance.actions, [], `${where} status ${JSON.stringify(status)}`);
+      assert.deepEqual(provenance.executionStatus, status);
+      assert.match(report.diagnostics.join(' '), /status/i);
+    }
+  }
+});

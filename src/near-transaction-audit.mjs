@@ -2,16 +2,22 @@ const isRecord = (value) => value !== null && typeof value === 'object' && !Arra
 
 function executionStatusName(outcome) {
   const status = outcome?.status;
-  if (typeof status === 'string') return status;
-  if (isRecord(status)) {
-    const keys = Object.keys(status);
-    return keys.length === 1 ? keys[0] : null;
+  if (typeof status === 'string') {
+    return ['SuccessValue', 'SuccessReceiptId', 'Failure'].includes(status) ? status : null;
   }
+  if (!isRecord(status)) return null;
+
+  const keys = Object.keys(status);
+  if (keys.length !== 1) return null;
+  const [variant] = keys;
+  if (variant === 'SuccessValue' && typeof status[variant] === 'string') return variant;
+  if (variant === 'SuccessReceiptId' && typeof status[variant] === 'string' && status[variant].length > 0) return variant;
+  if (variant === 'Failure' && isRecord(status[variant])) return variant;
   return null;
 }
 
 function hasRecognizedExecutionStatus(outcome) {
-  return ['SuccessValue', 'SuccessReceiptId', 'Failure'].includes(executionStatusName(outcome));
+  return executionStatusName(outcome) !== null;
 }
 
 function isSuccessful(outcome) {
