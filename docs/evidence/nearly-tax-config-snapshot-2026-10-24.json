@@ -1,0 +1,90 @@
+{
+  "network": "NEAR mainnet",
+  "rpcEndpoint": "https://rpc.mainnet.near.org",
+  "pinnedFinalBlock": {
+    "height": 221413865,
+    "hash": "DUKj6196K6H37rJRb1mnNg5s9Eoke3eyAa2KqU55YTjy"
+  },
+  "factoryAccount": "nearlytrade.near",
+  "viewAccount": {
+    "request": {
+      "method": "query",
+      "params": {
+        "request_type": "view_account",
+        "account_id": "nearlytrade.near",
+        "block_id": "DUKj6196K6H37rJRb1mnNg5s9Eoke3eyAa2KqU55YTjy"
+      }
+    },
+    "response": {
+      "block_height": 221413865,
+      "block_hash": "DUKj6196K6H37rJRb1mnNg5s9Eoke3eyAa2KqU55YTjy",
+      "code_hash": "9mwfrbtBbDr3y2t9rHY944qAQTU2PsB5smqsAHZJo4G5"
+    }
+  },
+  "calls": [
+    {
+      "method": "get_config",
+      "args": {},
+      "block_height": 221413865,
+      "block_hash": "DUKj6196K6H37rJRb1mnNg5s9Eoke3eyAa2KqU55YTjy",
+      "decoded_result": {
+        "creator_fee_share_bps": 6000,
+        "pool_fee": 10000,
+        "max_dev_buy_bps": 400,
+        "total_supply": "1000000000000000000000000000"
+      }
+    },
+    {
+      "method": "get_creator_share_bounds",
+      "args": {},
+      "block_height": 221413865,
+      "block_hash": "DUKj6196K6H37rJRb1mnNg5s9Eoke3eyAa2KqU55YTjy",
+      "decoded_result": [6000, 6000]
+    },
+    {
+      "method": "get_tax_bounds",
+      "args": {},
+      "block_height": 221413865,
+      "block_hash": "DUKj6196K6H37rJRb1mnNg5s9Eoke3eyAa2KqU55YTjy",
+      "decoded_result": [400, true, 4000],
+      "decoded_fields": {
+        "max_tax_bps": 400,
+        "tax_code_installed": true,
+        "platform_tax_bps": 4000
+      }
+    },
+    {
+      "method": "get_tax",
+      "args": {
+        "launch_id": "3435"
+      },
+      "block_height": 221413865,
+      "block_hash": "DUKj6196K6H37rJRb1mnNg5s9Eoke3eyAa2KqU55YTjy",
+      "decoded_result": {
+        "buy_bps": 100,
+        "sell_bps": 100,
+        "creator_bps": 3300,
+        "holders_bps": 3400,
+        "burn_bps": 3300,
+        "platform_bps": 4000
+      }
+    },
+    {
+      "method": "get_tax",
+      "args": {
+        "launch_id": "1230"
+      },
+      "block_height": 221413865,
+      "block_hash": "DUKj6196K6H37rJRb1mnNg5s9Eoke3eyAa2KqU55YTjy",
+      "decoded_result": {
+        "buy_bps": 100,
+        "sell_bps": 100,
+        "creator_bps": 0,
+        "holders_bps": 10000,
+        "burn_bps": 0,
+        "platform_bps": 2000
+      }
+    }
+  ],
+  "scope": "Pinned read-only factory configuration and launch-specific tax snapshots. Existing launch tax options are not defaults for future launches. This evidence does not authorize a launch or establish that the PRD's 70/20/10 gross tax target is supported by this deployed factory."
+}

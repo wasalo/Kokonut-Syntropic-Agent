@@ -1,0 +1,73 @@
+{
+  "version": 1,
+  "sources": [
+    {
+      "id": 1,
+      "url": "https://raw.githubusercontent.com/sam3dsol/Nearlytrade/e82bfa013ea380f9dbbcb9d58e9f0af798185eab/contracts/factory/src/lib.rs",
+      "title": "Nearly factory deployed-source snapshot at e82bfa0",
+      "accessed": "2026-10-24",
+      "quotes": [
+        {
+          "text": "const PLATFORM_TAX_BPS: u16 = PROTOCOL_BPS + HOLDERS_POT_BPS + REFERRAL_POT_BPS;",
+          "added": "2026-10-24"
+        },
+        {
+          "text": "const PROTOCOL_BPS: u16 = 2_000;",
+          "added": "2026-10-24"
+        },
+        {
+          "text": "const HOLDERS_POT_BPS: u16 = 1_000;\nconst REFERRAL_POT_BPS: u16 = 1_000;",
+          "added": "2026-10-24"
+        },
+        {
+          "text": "let (mode, share_bps) = fee_opts(id, UNRECORDED_SHARE_BPS);\n        let share = l_share(share_bps);\n        let c_quote = fee_quote * share / BPS;\n        let p_quote = fee_quote - c_quote;",
+          "added": "2026-10-24"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "url": "https://rpc.mainnet.near.org",
+      "title": "NEAR mainnet RPC snapshots at finalized blocks 221413865 and 221417620",
+      "accessed": "2026-10-24",
+      "quotes": [
+        {
+          "text": "\"decoded_fields\": {\n        \"max_tax_bps\": 400,\n        \"tax_code_installed\": true,\n        \"platform_tax_bps\": 4000\n      }",
+          "added": "2026-10-24"
+        },
+        {
+          "text": "\"decoded_result\": [6000, 6000]",
+          "added": "2026-10-24"
+        },
+        {
+          "text": "\"response\": {\n      \"block_height\": 221413865,\n      \"block_hash\": \"DUKj6196K6H37rJRb1mnNg5s9Eoke3eyAa2KqU55YTjy\",\n      \"code_hash\": \"9mwfrbtBbDr3y2t9rHY944qAQTU2PsB5smqsAHZJo4G5\"",
+          "added": "2026-10-24"
+        },
+        {
+          "text": "\"decoded_result\": [400, true, 4000],\n      \"decoded_fields\": {\n        \"max_tax_bps\": 400,\n        \"tax_code_installed\": true,\n        \"platform_tax_bps\": 4000\n      }",
+          "added": "2026-10-24"
+        },
+        {
+          "text": "\"method\": \"get_tax\",\n      \"args\": {\n        \"launch_id\": \"3435\"\n      },\n      \"block_height\": 221413865,\n      \"block_hash\": \"DUKj6196K6H37rJRb1mnNg5s9Eoke3eyAa2KqU55YTjy\",\n      \"decoded_result\": {\n        \"buy_bps\": 100,\n        \"sell_bps\": 100,\n        \"creator_bps\": 3300,\n        \"holders_bps\": 3400,\n        \"burn_bps\": 3300,\n        \"platform_bps\": 4000\n      }",
+          "added": "2026-10-24"
+        },
+        {
+          "text": "\"method\": \"get_tax\",\n      \"args\": {\n        \"launch_id\": \"1230\"\n      },\n      \"block_height\": 221413865,\n      \"block_hash\": \"DUKj6196K6H37rJRb1mnNg5s9Eoke3eyAa2KqU55YTjy\",\n      \"decoded_result\": {\n        \"buy_bps\": 100,\n        \"sell_bps\": 100,\n        \"creator_bps\": 0,\n        \"holders_bps\": 10000,\n        \"burn_bps\": 0,\n        \"platform_bps\": 2000\n      }",
+          "added": "2026-10-24"
+        },
+        {
+          "text": "\"method\": \"get_config\",\n      \"args\": {},\n      \"block_height\": 221413865,\n      \"block_hash\": \"DUKj6196K6H37rJRb1mnNg5s9Eoke3eyAa2KqU55YTjy\",\n      \"decoded_result\": {\n        \"creator_fee_share_bps\": 6000,\n        \"pool_fee\": 10000,\n        \"max_dev_buy_bps\": 400,\n        \"total_supply\": \"1000000000000000000000000000\"",
+          "added": "2026-10-24"
+        },
+        {
+          "text": "\"block\": {\n      \"height\": 221417620,\n      \"hash\": \"6TKq4sPTLzuBah8wEUxjhHhJ3ZudYmapfJ2BAKTciDFM\"\n    },\n    \"launchCount\": 3444,\n    \"config\": {\n      \"total_supply\": \"1000000000000000000000000000\",\n      \"pool_fee\": 10000,\n      \"init_point\": 0,\n      \"min_init_point\": -6800,\n      \"max_init_point\": 15200,\n      \"range_points\": 1000000,\n      \"launch_fee\": \"0\",\n      \"creator_fee_share_bps\": 6000",
+          "added": "2026-10-24"
+        },
+        {
+          "text": "\"taxBounds\": [\n      400,\n      true,\n      4000\n    ]\n  },\n  \"checks\": [\n    {\n      \"id\": \"factory_account\",\n      \"status\": \"pass\"",
+          "added": "2026-10-24"
+        }
+      ]
+    }
+  ]
+}

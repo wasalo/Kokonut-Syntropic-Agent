@@ -87,6 +87,7 @@ test('near-readiness command prints a blocked report when observed factory state
       const values = {
         get_config: { total_supply: '1000000000000000000000000000', creator_fee_share_bps: 7000 },
         get_creator_share_bounds: [6000, 6000],
+        get_tax_bounds: [400, true, 4000],
         get_quotes: [['wrap.near', { enabled: true }]],
         get_num_launches: 42
       };
@@ -104,6 +105,8 @@ test('near-readiness command prints a blocked report when observed factory state
     assert.equal(result.status, 1);
     assert.match(result.stdout, /"status": "blocked"/);
     assert.match(result.stdout, /"configured": 7000/);
+    assert.match(result.stdout, /"id": "tax_economics_compatibility"/);
+    assert.match(result.stdout, /"platform_tax_bps": 4000/);
     assert.match(result.stdout, /"launchAuthorized": false/);
   } finally {
     rmSync(dir, { recursive: true, force: true });

@@ -2,10 +2,12 @@ const RPC_ENDPOINT = 'https://rpc.mainnet.near.org';
 const FACTORY_ACCOUNT = 'nearlytrade.near';
 const EXPECTED = Object.freeze({
   creatorShareBps: 6000,
+  taxTargetPlatformBps: 3000,
+  minTaxRateBps: 300,
   genesisSupply: '1000000000000000000000000000',
   pairAsset: 'wrap.near',
 });
-const REQUIRED_READS = 5;
+const REQUIRED_READS = 6;
 
 async function rpcRequest(method, params, { endpoint, fetchImpl, id }) {
   const response = await fetchImpl(endpoint, {
@@ -48,23 +50,25 @@ export async function readNearlyFactorySnapshot({ endpoint = RPC_ENDPOINT, fetch
     throw new Error('NEAR RPC returned an invalid final block reference');
   }
 
-  const [code, config, shareBounds, quotes, launchCount] = await Promise.all([
+  const [code, config, shareBounds, taxBounds, quotes, launchCount] = await Promise.all([
     rpcRequest('query', {
       request_type: 'view_code', block_id: blockHash, account_id: FACTORY_ACCOUNT,
     }, { endpoint, fetchImpl, id: 'nearly-factory-code' }),
     readView({ method: 'get_config', blockHash, endpoint, fetchImpl }),
     readView({ method: 'get_creator_share_bounds', blockHash, endpoint, fetchImpl }),
+    readView({ method: 'get_tax_bounds', blockHash, endpoint, fetchImpl }),
     readView({ method: 'get_quotes', blockHash, endpoint, fetchImpl }),
     readView({ method: 'get_num_launches', blockHash, endpoint, fetchImpl }),
   ]);
 
-  const sourceBlockHashes = [code.block_hash, config.blockHash, shareBounds.blockHash, quotes.blockHash, launchCount.blockHash];
+  const sourceBlockHashes = [code.block_hash, config.blockHash, shareBounds.blockHash, taxBounds.blockHash, quotes.blockHash, launchCount.blockHash];
   return {
     factoryAccount: FACTORY_ACCOUNT,
     block: { height: blockHeight, hash: blockHash },
     codeHash: code.hash,
     config: config.value,
     creatorShareBounds: shareBounds.value,
+    taxBounds: taxBounds.value,
     quotes: quotes.value,
     launchCount: launchCount.value,
     sourceBlockHashes,
@@ -114,6 +118,30 @@ export function evaluateNearlyFactorySnapshot(snapshot) {
     shareMatches ? 'Factory matches the contract-verified creator pool-fee share.' : 'Live factory pool-fee creator share differs from the contract-aligned model or its allowed bounds; reconcile before proceeding.',
   ));
 
+  const [maxTaxBps, taxCodeInstalled, platformTaxBps] = Array.isArray(snapshot.taxBounds) ? snapshot.taxBounds : [];
+  const taxBoundsValid = Array.isArray(snapshot.taxBounds) && snapshot.taxBounds.length === 3 &&
+    Number.isInteger(maxTaxBps) && typeof taxCodeInstalled === 'boolean' && Number.isInteger(platformTaxBps);
+  const taxEconomicsMatch = taxBoundsValid &&
+    maxTaxBps >= EXPECTED.minTaxRateBps &&
+    taxCodeInstalled === true &&
+    platformTaxBps === EXPECTED.taxTargetPlatformBps;
+  checks.push(check(
+    'tax_economics_compatibility', taxEconomicsMatch ? 'pass' : 'blocker',
+    {
+      max_tax_bps_at_least: EXPECTED.minTaxRateBps,
+      tax_code_installed: true,
+      platform_tax_bps: EXPECTED.taxTargetPlatformBps,
+    },
+    taxBoundsValid ? {
+      max_tax_bps: maxTaxBps,
+      tax_code_installed: taxCodeInstalled,
+      platform_tax_bps: platformTaxBps,
+    } : snapshot.taxBounds ?? null,
+    taxEconomicsMatch
+      ? 'Factory-level bounds are consistent with the target 300-bps rate and 3000-bps platform share; launch-specific weights and approvals remain unverified.'
+      : 'Factory tax bounds do not support the target 70/20/10 gross allocation; preserve it as a target and block launch pending contract support and approval.',
+  ));
+
   const supplyMatches = snapshot.config?.total_supply === EXPECTED.genesisSupply;
   checks.push(check(
     'factory_genesis_supply_parameter', supplyMatches ? 'pass' : 'blocker',
@@ -150,6 +178,7 @@ export function evaluateNearlyFactorySnapshot(snapshot) {
       block: snapshot.block ?? null,
       launchCount: snapshot.launchCount ?? null,
       config: snapshot.config ?? null,
+      taxBounds: snapshot.taxBounds ?? null,
     },
     checks,
     disclaimer: 'Read-only factory observation only. This report is not a launch authorization, security audit, or legal approval.',

@@ -1,0 +1,157 @@
+{
+  "schemaVersion": "1.0",
+  "status": "blocked",
+  "launchAuthorized": false,
+  "factory": {
+    "account": "nearlytrade.near",
+    "codeHash": "9mwfrbtBbDr3y2t9rHY944qAQTU2PsB5smqsAHZJo4G5",
+    "block": {
+      "height": 221417620,
+      "hash": "6TKq4sPTLzuBah8wEUxjhHhJ3ZudYmapfJ2BAKTciDFM"
+    },
+    "launchCount": 3444,
+    "config": {
+      "total_supply": "1000000000000000000000000000",
+      "pool_fee": 10000,
+      "init_point": 0,
+      "min_init_point": -6800,
+      "max_init_point": 15200,
+      "range_points": 1000000,
+      "launch_fee": "0",
+      "creator_fee_share_bps": 6000,
+      "dcl_storage_per_launch": "20000000000000000000000",
+      "max_icon_bytes": 16384,
+      "unique_symbols": false,
+      "max_dev_buy_bps": 400,
+      "max_wallet_bps": 0,
+      "max_wallet_ms": 0
+    },
+    "taxBounds": [
+      400,
+      true,
+      4000
+    ]
+  },
+  "checks": [
+    {
+      "id": "factory_account",
+      "status": "pass",
+      "expected": "nearlytrade.near",
+      "observed": "nearlytrade.near",
+      "message": "Observed the expected Nearly factory account."
+    },
+    {
+      "id": "snapshot_consistency",
+      "status": "pass",
+      "expected": "all 6 reads pinned to 6TKq4sPTLzuBah8wEUxjhHhJ3ZudYmapfJ2BAKTciDFM",
+      "observed": [
+        "6TKq4sPTLzuBah8wEUxjhHhJ3ZudYmapfJ2BAKTciDFM",
+        "6TKq4sPTLzuBah8wEUxjhHhJ3ZudYmapfJ2BAKTciDFM",
+        "6TKq4sPTLzuBah8wEUxjhHhJ3ZudYmapfJ2BAKTciDFM",
+        "6TKq4sPTLzuBah8wEUxjhHhJ3ZudYmapfJ2BAKTciDFM",
+        "6TKq4sPTLzuBah8wEUxjhHhJ3ZudYmapfJ2BAKTciDFM",
+        "6TKq4sPTLzuBah8wEUxjhHhJ3ZudYmapfJ2BAKTciDFM"
+      ],
+      "message": "Factory data and code were read at one final block."
+    },
+    {
+      "id": "factory_code_hash",
+      "status": "manual_review",
+      "expected": "observed code hash compared with an independently approved baseline",
+      "observed": "9mwfrbtBbDr3y2t9rHY944qAQTU2PsB5smqsAHZJo4G5",
+      "message": "Observed code hash is recorded, but no approved audit/baseline hash is configured."
+    },
+    {
+      "id": "creator_pool_fee_share",
+      "status": "pass",
+      "expected": {
+        "configured_bps": 6000,
+        "allowed_bounds_include_bps": 6000
+      },
+      "observed": {
+        "configured": 6000,
+        "allowed_bounds": [
+          6000,
+          6000
+        ]
+      },
+      "message": "Factory matches the contract-verified creator pool-fee share."
+    },
+    {
+      "id": "tax_economics_compatibility",
+      "status": "blocker",
+      "expected": {
+        "max_tax_bps_at_least": 300,
+        "tax_code_installed": true,
+        "platform_tax_bps": 3000
+      },
+      "observed": {
+        "max_tax_bps": 400,
+        "tax_code_installed": true,
+        "platform_tax_bps": 4000
+      },
+      "message": "Factory tax bounds do not support the target 70/20/10 gross allocation; preserve it as a target and block launch pending contract support and approval."
+    },
+    {
+      "id": "factory_genesis_supply_parameter",
+      "status": "pass",
+      "expected": "1000000000000000000000000000",
+      "observed": "1000000000000000000000000000",
+      "message": "Factory supply parameter matches the PRD reference."
+    },
+    {
+      "id": "near_pair",
+      "status": "pass",
+      "expected": {
+        "asset": "wrap.near",
+        "enabled": true
+      },
+      "observed": {
+        "decimals": 24,
+        "init_point": 0,
+        "min_init_point": -6800,
+        "max_init_point": 15200,
+        "range_points": 1000000,
+        "native": true,
+        "enabled": true
+      },
+      "message": "The NEAR pair asset is enabled in factory quote configuration."
+    },
+    {
+      "id": "legal_issuer",
+      "status": "manual_review",
+      "expected": "Named and approved NEAR issuer/operator",
+      "observed": null,
+      "message": "Not verifiable from factory state."
+    },
+    {
+      "id": "beneficiary_routing",
+      "status": "manual_review",
+      "expected": "Governed mission recipient and actual payout routing verified",
+      "observed": null,
+      "message": "Creator/beneficiary routing must be confirmed before any launch."
+    },
+    {
+      "id": "legal_security_signoff",
+      "status": "manual_review",
+      "expected": "Documented legal, security, and corporate approvals",
+      "observed": null,
+      "message": "Approvals are outside this read-only chain check."
+    },
+    {
+      "id": "tax_payload",
+      "status": "manual_review",
+      "expected": "Signed launch payload matches 300/300 and 8000/1000/1000 bps",
+      "observed": null,
+      "message": "Tax settings are launch-specific and are not proven by factory configuration."
+    },
+    {
+      "id": "token_state",
+      "status": "manual_review",
+      "expected": "Launched token, supply, immutability, and LP lock independently verified",
+      "observed": null,
+      "message": "No token-specific launch state is checked by this prelaunch factory snapshot."
+    }
+  ],
+  "disclaimer": "Read-only factory observation only. This report is not a launch authorization, security audit, or legal approval."
+}
