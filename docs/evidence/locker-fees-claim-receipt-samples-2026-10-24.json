@@ -1,0 +1,621 @@
+{
+  "network": "NEAR mainnet",
+  "fastnearEndpoint": "https://tx.main.fastnear.com/v0/transactions",
+  "fastnearRequest": {
+    "tx_hashes": [
+      "EH5J4bgSdNvJtGrBnmudXkJrnm6MwSiYqdzrEWfYDtiW",
+      "BAuSqbnFEq4BHaJ4UcaoCNBn2AT9tWF77LbpwHvaD4KJ"
+    ]
+  },
+  "rpcEndpoint": "https://rpc.mainnet.near.org",
+  "samples": [
+    {
+      "transactionHash": "EH5J4bgSdNvJtGrBnmudXkJrnm6MwSiYqdzrEWfYDtiW",
+      "launchId": 3435,
+      "locker": "lock_8.nearlytrade.near",
+      "rootTransaction": {
+        "blockHeight": 221386682,
+        "blockHash": "DqzCKrLnwMxtkuybfQq4AAWMamCjKuNLBTXRLDx1gm33",
+        "signerId": "nearlytrade.near",
+        "receiverId": "nearlytrade.near",
+        "rootOutcomeId": "EH5J4bgSdNvJtGrBnmudXkJrnm6MwSiYqdzrEWfYDtiW",
+        "status": "SuccessReceiptId"
+      },
+      "feesClaimed": {
+        "emitter": "nearlytrade.near",
+        "receipt": {
+          "receipt_id": "5kJrXsqcPA7EdhV34tFH78XCCUEsJsaHnbzbHEFaLvZt",
+          "predecessor_id": "nearlytrade.near",
+          "receiver_id": "nearlytrade.near",
+          "outcome_id": "5kJrXsqcPA7EdhV34tFH78XCCUEsJsaHnbzbHEFaLvZt",
+          "block_height": 221386695,
+          "block_hash": "iaKXkeZ212W5iYVcFY8DK2LjbJF1qookbJof42XbgQ8",
+          "executor_id": "nearlytrade.near",
+          "status": {
+            "SuccessValue": "dHJ1ZQ=="
+          },
+          "actions": [
+            {
+              "type": "FunctionCall",
+              "method_name": "on_fees_claimed",
+              "gas": 115251128856693,
+              "deposit": "0"
+            }
+          ],
+          "logs": [
+            "EVENT_JSON:{\"standard\":\"nearpad\",\"version\":\"2.0.0\",\"event\":\"fees_claimed\",\"data\":[{\"id\":3435,\"token\":\"grlant.nearlytrade.near\",\"quote\":\"wrap.near\",\"fee_near\":\"71675999999999999999999\",\"fee_quote\":\"71675999999999999999999\",\"fee_token\":\"356366157890760884549396\",\"creator_quote\":\"43005599999999999999999\",\"protocol_quote\":\"28670400000000000000000\",\"ts_ms\":1792843863353}]}"
+          ]
+        },
+        "event": {
+          "id": 3435,
+          "token": "grlant.nearlytrade.near",
+          "quote": "wrap.near",
+          "fee_near": "71675999999999999999999",
+          "fee_quote": "71675999999999999999999",
+          "fee_token": "356366157890760884549396",
+          "creator_quote": "43005599999999999999999",
+          "protocol_quote": "28670400000000000000000",
+          "ts_ms": 1792843863353
+        }
+      },
+      "receiptGraphAudit": {
+        "complete": true,
+        "actionReceiptCount": 36,
+        "dataReceiptCount": 9,
+        "failedActionReceiptCount": 0,
+        "diagnosticCount": 0
+      },
+      "lockerToFactoryNativeTransfer": {
+        "receipt": {
+          "receipt_id": "5WEeQUpFWjZKH6hvnJU47XwCT3qWdeNThRG616G7Fdbc",
+          "predecessor_id": "lock_8.nearlytrade.near",
+          "receiver_id": "nearlytrade.near",
+          "outcome_id": "5WEeQUpFWjZKH6hvnJU47XwCT3qWdeNThRG616G7Fdbc",
+          "block_height": 221386693,
+          "block_hash": "CQGumte7N6rA6o26552qQS3JsjZXWwfbBiBVRNKT5fFr",
+          "executor_id": "nearlytrade.near",
+          "status": {
+            "SuccessValue": ""
+          },
+          "actions": [
+            {
+              "type": "Transfer",
+              "deposit": "71675999999999999999999"
+            }
+          ]
+        },
+        "actionIndex": 0,
+        "amount": "71675999999999999999999",
+        "matches_fee_near": true
+      },
+      "lockerToFactoryFtTransfer": {
+        "receipt": {
+          "receipt_id": "DVAAsLoaFhTqzidC34ZwgXJR7Xd3QpmEqghw3Qkc9J2Y",
+          "predecessor_id": "lock_8.nearlytrade.near",
+          "receiver_id": "grlant.nearlytrade.near",
+          "outcome_id": "DVAAsLoaFhTqzidC34ZwgXJR7Xd3QpmEqghw3Qkc9J2Y",
+          "block_height": 221386690,
+          "block_hash": "EvGGj5o79ygHguQA6EMrDvbrDevKNzMz43eiTp6BTd9S",
+          "executor_id": "grlant.nearlytrade.near",
+          "status": {
+            "SuccessValue": ""
+          },
+          "actions": [
+            {
+              "type": "FunctionCall",
+              "method_name": "ft_transfer",
+              "gas": 15000000000000,
+              "deposit": "1"
+            }
+          ],
+          "logs": [
+            "EVENT_JSON:{\"standard\":\"nep141\",\"version\":\"1.0.0\",\"event\":\"ft_transfer\",\"data\":[{\"old_owner_id\":\"lock_8.nearlytrade.near\",\"new_owner_id\":\"nearlytrade.near\",\"amount\":\"356366157890760884549396\",\"memo\":\"lp fees\"}]}"
+          ]
+        },
+        "event": {
+          "standard": "nep141",
+          "version": "1.0.0",
+          "event": "ft_transfer",
+          "data": [
+            {
+              "old_owner_id": "lock_8.nearlytrade.near",
+              "new_owner_id": "nearlytrade.near",
+              "amount": "356366157890760884549396",
+              "memo": "lp fees"
+            }
+          ]
+        },
+        "matches_fee_token": true
+      },
+      "pinnedFactoryAndLockerState": {
+        "rpcEndpoint": "https://rpc.mainnet.near.org",
+        "eventBlockHeight": 221386695,
+        "eventBlockHash": "iaKXkeZ212W5iYVcFY8DK2LjbJF1qookbJof42XbgQ8",
+        "getLockersRequest": {
+          "request_type": "call_function",
+          "block_id": "iaKXkeZ212W5iYVcFY8DK2LjbJF1qookbJof42XbgQ8",
+          "account_id": "nearlytrade.near",
+          "method_name": "get_lockers",
+          "args_base64": "e30="
+        },
+        "getLockersResponse": [
+          [
+            "0",
+            "lock.nearlytrade.near"
+          ],
+          [
+            "158",
+            "lock2.nearlytrade.near"
+          ],
+          [
+            "1810",
+            "lock3.nearlytrade.near"
+          ],
+          [
+            "1931",
+            "lock4.nearlytrade.near"
+          ],
+          [
+            "1935",
+            "lock_4.nearlytrade.near"
+          ],
+          [
+            "2064",
+            "lock_5.nearlytrade.near"
+          ],
+          [
+            "2192",
+            "lock_6.nearlytrade.near"
+          ],
+          [
+            "2549",
+            "lock_7.nearlytrade.near"
+          ],
+          [
+            "2596",
+            "lock_8.nearlytrade.near"
+          ]
+        ],
+        "lockerStateQueries": {
+          "view_account": {
+            "request": {
+              "request_type": "view_account",
+              "block_id": "iaKXkeZ212W5iYVcFY8DK2LjbJF1qookbJof42XbgQ8",
+              "account_id": "lock_8.nearlytrade.near"
+            },
+            "response": {
+              "amount": "14050188935589132299996397",
+              "block_hash": "iaKXkeZ212W5iYVcFY8DK2LjbJF1qookbJof42XbgQ8",
+              "block_height": 221386695,
+              "code_hash": "4CMfhWsUNfXgotni5nnt9vePC1dpb4aQF8x1KQjoyG6u",
+              "locked": "0",
+              "storage_paid_at": 0,
+              "storage_usage": 482577
+            }
+          },
+          "view_code": {
+            "request": {
+              "request_type": "view_code",
+              "block_id": "iaKXkeZ212W5iYVcFY8DK2LjbJF1qookbJof42XbgQ8",
+              "account_id": "lock_8.nearlytrade.near"
+            },
+            "response": {
+              "block_hash": "iaKXkeZ212W5iYVcFY8DK2LjbJF1qookbJof42XbgQ8",
+              "block_height": 221386695,
+              "hash": "4CMfhWsUNfXgotni5nnt9vePC1dpb4aQF8x1KQjoyG6u"
+            }
+          },
+          "view_access_key_list": {
+            "request": {
+              "request_type": "view_access_key_list",
+              "block_id": "iaKXkeZ212W5iYVcFY8DK2LjbJF1qookbJof42XbgQ8",
+              "account_id": "lock_8.nearlytrade.near"
+            },
+            "response": {
+              "block_hash": "iaKXkeZ212W5iYVcFY8DK2LjbJF1qookbJof42XbgQ8",
+              "block_height": 221386695,
+              "keys": "[0 key entries; see accessKeyCount]"
+            }
+          },
+          "contract_source_metadata": {
+            "request": {
+              "request_type": "call_function",
+              "block_id": "iaKXkeZ212W5iYVcFY8DK2LjbJF1qookbJof42XbgQ8",
+              "account_id": "lock_8.nearlytrade.near",
+              "method_name": "contract_source_metadata",
+              "args_base64": "e30="
+            },
+            "response": {
+              "block_hash": "iaKXkeZ212W5iYVcFY8DK2LjbJF1qookbJof42XbgQ8",
+              "block_height": 221386695,
+              "logs": [],
+              "decoded_result": {
+                "version": "0.3.0",
+                "link": "https://github.com/sam3dsol/Nearlytrade/tree/a476bbe47a694e2b24e7060738870065882df011",
+                "standards": [
+                  {
+                    "standard": "nep330",
+                    "version": "1.3.0"
+                  }
+                ],
+                "build_info": {
+                  "build_environment": "sourcescan/cargo-near:0.22.0-rust-1.97.1@sha256:7467038bdddc86484b73b416eeadce926ff59013e128e53dec5a19e1cb4b2234",
+                  "build_command": [
+                    "cargo",
+                    "near",
+                    "build",
+                    "non-reproducible-wasm",
+                    "--locked"
+                  ],
+                  "contract_path": "contracts/locker3",
+                  "source_code_snapshot": "git+https://github.com/sam3dsol/Nearlytrade?rev=a476bbe47a694e2b24e7060738870065882df011",
+                  "output_wasm_path": "/home/near/code/target/near/nearpad_locker3/nearpad_locker3.wasm"
+                }
+              }
+            }
+          }
+        },
+        "lockerCodeVerification": {
+          "viewAccountCodeHash": "4CMfhWsUNfXgotni5nnt9vePC1dpb4aQF8x1KQjoyG6u",
+          "viewCodeHash": "4CMfhWsUNfXgotni5nnt9vePC1dpb4aQF8x1KQjoyG6u",
+          "wasmBytes": 287404,
+          "sha256": "2f7bd173e4aef59e944d36ae0152d22d7d6a08c3dbac5a9a166eb954db898312",
+          "matchesCurrentSavedWasm": true,
+          "accessKeyCount": 0
+        }
+      },
+      "tokenStateQueries": {
+        "accountId": "grlant.nearlytrade.near",
+        "blockHeight": 221386695,
+        "blockHash": "iaKXkeZ212W5iYVcFY8DK2LjbJF1qookbJof42XbgQ8",
+        "codeHash": "11111111111111111111111111111111",
+        "globalContractHash": "8GXVnFTxx1d6tYnoqNiQ5YzzQpj1uyxG7u28LeCGmsER",
+        "wasmBytes": 22258,
+        "sha256": "6bfc00b72948064a5c18c8081a1107a7f9e2b3f2068b5060d2f3711ec195a482",
+        "accessKeyCount": 0,
+        "queries": {
+          "account": {
+            "request": {
+              "request_type": "view_account",
+              "block_id": "iaKXkeZ212W5iYVcFY8DK2LjbJF1qookbJof42XbgQ8",
+              "account_id": "grlant.nearlytrade.near"
+            },
+            "response": {
+              "amount": "122728296455787300000168",
+              "block_hash": "iaKXkeZ212W5iYVcFY8DK2LjbJF1qookbJof42XbgQ8",
+              "block_height": 221386695,
+              "code_hash": "11111111111111111111111111111111",
+              "global_contract_hash": "8GXVnFTxx1d6tYnoqNiQ5YzzQpj1uyxG7u28LeCGmsER",
+              "locked": "0",
+              "storage_paid_at": 0,
+              "storage_usage": 8832
+            }
+          },
+          "code": {
+            "request": {
+              "request_type": "view_code",
+              "block_id": "iaKXkeZ212W5iYVcFY8DK2LjbJF1qookbJof42XbgQ8",
+              "account_id": "grlant.nearlytrade.near"
+            },
+            "response": {
+              "block_hash": "iaKXkeZ212W5iYVcFY8DK2LjbJF1qookbJof42XbgQ8",
+              "block_height": 221386695,
+              "hash": "8GXVnFTxx1d6tYnoqNiQ5YzzQpj1uyxG7u28LeCGmsER"
+            }
+          },
+          "keys": {
+            "request": {
+              "request_type": "view_access_key_list",
+              "block_id": "iaKXkeZ212W5iYVcFY8DK2LjbJF1qookbJof42XbgQ8",
+              "account_id": "grlant.nearlytrade.near"
+            },
+            "response": {
+              "block_hash": "iaKXkeZ212W5iYVcFY8DK2LjbJF1qookbJof42XbgQ8",
+              "block_height": 221386695,
+              "keys": "[0 key entries; see accessKeyCount]"
+            }
+          }
+        }
+      },
+      "interpretation": "Sample-level receipt evidence only. Does not establish exact locker source provenance, general behavior across claims, payout completion, or financial reconciliation."
+    },
+    {
+      "transactionHash": "BAuSqbnFEq4BHaJ4UcaoCNBn2AT9tWF77LbpwHvaD4KJ",
+      "launchId": 1230,
+      "locker": "lock2.nearlytrade.near",
+      "rootTransaction": {
+        "blockHeight": 221393040,
+        "blockHash": "54PBViHhwhuuYcJM9sspzueavhF9ytBbYhqjeTFido6X",
+        "signerId": "nearlytrade.near",
+        "receiverId": "nearlytrade.near",
+        "rootOutcomeId": "BAuSqbnFEq4BHaJ4UcaoCNBn2AT9tWF77LbpwHvaD4KJ",
+        "status": "SuccessReceiptId"
+      },
+      "feesClaimed": {
+        "emitter": "nearlytrade.near",
+        "receipt": {
+          "receipt_id": "3Qm2AjGsRvzuPxic1nMotWuuZdK2CMTaJy7TzSqSDZmz",
+          "predecessor_id": "nearlytrade.near",
+          "receiver_id": "nearlytrade.near",
+          "outcome_id": "3Qm2AjGsRvzuPxic1nMotWuuZdK2CMTaJy7TzSqSDZmz",
+          "block_height": 221393047,
+          "block_hash": "4XZCsEZKiFTt8NNGQd2Qtvi8EEj3pLMGo8usDq4KNVnv",
+          "executor_id": "nearlytrade.near",
+          "status": {
+            "SuccessValue": "dHJ1ZQ=="
+          },
+          "actions": [
+            {
+              "type": "FunctionCall",
+              "method_name": "on_fees_claimed",
+              "gas": 114603863464530,
+              "deposit": "0"
+            }
+          ],
+          "logs": [
+            "EVENT_JSON:{\"standard\":\"nearpad\",\"version\":\"2.0.0\",\"event\":\"fees_claimed\",\"data\":[{\"id\":1230,\"token\":\"singularty.nearlytrade.near\",\"quote\":\"wrap.near\",\"fee_near\":\"55039999999999999999999\",\"fee_quote\":\"55039999999999999999999\",\"fee_token\":\"68655014104821487751\",\"creator_quote\":\"44031999999999999999999\",\"protocol_quote\":\"11008000000000000000000\",\"ts_ms\":1792847521245}]}"
+          ]
+        },
+        "event": {
+          "id": 1230,
+          "token": "singularty.nearlytrade.near",
+          "quote": "wrap.near",
+          "fee_near": "55039999999999999999999",
+          "fee_quote": "55039999999999999999999",
+          "fee_token": "68655014104821487751",
+          "creator_quote": "44031999999999999999999",
+          "protocol_quote": "11008000000000000000000",
+          "ts_ms": 1792847521245
+        }
+      },
+      "receiptGraphAudit": {
+        "complete": true,
+        "actionReceiptCount": 28,
+        "dataReceiptCount": 6,
+        "failedActionReceiptCount": 0,
+        "diagnosticCount": 0
+      },
+      "lockerToFactoryNativeTransfer": {
+        "receipt": {
+          "receipt_id": "31FfcaA1W3b2RgqscoCxw7fkwAehHK9TKTWPGtBcWFx8",
+          "predecessor_id": "lock2.nearlytrade.near",
+          "receiver_id": "nearlytrade.near",
+          "outcome_id": "31FfcaA1W3b2RgqscoCxw7fkwAehHK9TKTWPGtBcWFx8",
+          "block_height": 221393044,
+          "block_hash": "B43ts3AGaQYXebLMbZHKpKUhEDDcVp4mw3Drj98VSyxi",
+          "executor_id": "nearlytrade.near",
+          "status": {
+            "SuccessValue": ""
+          },
+          "actions": [
+            {
+              "type": "Transfer",
+              "deposit": "55039999999999999999999"
+            }
+          ]
+        },
+        "actionIndex": 0,
+        "amount": "55039999999999999999999",
+        "matches_fee_near": true
+      },
+      "lockerToFactoryFtTransfer": {
+        "receipt": {
+          "receipt_id": "EHmaChuBiE4iDGjsw2Ti6jHA9XFEzttqsoN4hJuiQJgM",
+          "predecessor_id": "lock2.nearlytrade.near",
+          "receiver_id": "singularty.nearlytrade.near",
+          "outcome_id": "EHmaChuBiE4iDGjsw2Ti6jHA9XFEzttqsoN4hJuiQJgM",
+          "block_height": 221393045,
+          "block_hash": "2XrcesXKpdaAimukm3bR4Vvv9PrvAhnVMFSSsXBhjcp6",
+          "executor_id": "singularty.nearlytrade.near",
+          "status": {
+            "SuccessValue": ""
+          },
+          "actions": [
+            {
+              "type": "FunctionCall",
+              "method_name": "ft_transfer",
+              "gas": 20000000000000,
+              "deposit": "1"
+            }
+          ],
+          "logs": [
+            "EVENT_JSON:{\"standard\":\"nep141\",\"version\":\"1.0.0\",\"event\":\"ft_transfer\",\"data\":[{\"old_owner_id\":\"lock2.nearlytrade.near\",\"new_owner_id\":\"nearlytrade.near\",\"amount\":\"68655014104821487751\",\"memo\":\"lp fees\"}]}"
+          ]
+        },
+        "event": {
+          "standard": "nep141",
+          "version": "1.0.0",
+          "event": "ft_transfer",
+          "data": [
+            {
+              "old_owner_id": "lock2.nearlytrade.near",
+              "new_owner_id": "nearlytrade.near",
+              "amount": "68655014104821487751",
+              "memo": "lp fees"
+            }
+          ]
+        },
+        "matches_fee_token": true
+      },
+      "pinnedFactoryAndLockerState": {
+        "rpcEndpoint": "https://rpc.mainnet.near.org",
+        "eventBlockHeight": 221393047,
+        "eventBlockHash": "4XZCsEZKiFTt8NNGQd2Qtvi8EEj3pLMGo8usDq4KNVnv",
+        "getLockersRequest": {
+          "request_type": "call_function",
+          "block_id": "4XZCsEZKiFTt8NNGQd2Qtvi8EEj3pLMGo8usDq4KNVnv",
+          "account_id": "nearlytrade.near",
+          "method_name": "get_lockers",
+          "args_base64": "e30="
+        },
+        "getLockersResponse": [
+          [
+            "0",
+            "lock.nearlytrade.near"
+          ],
+          [
+            "158",
+            "lock2.nearlytrade.near"
+          ],
+          [
+            "1810",
+            "lock3.nearlytrade.near"
+          ],
+          [
+            "1931",
+            "lock4.nearlytrade.near"
+          ],
+          [
+            "1935",
+            "lock_4.nearlytrade.near"
+          ],
+          [
+            "2064",
+            "lock_5.nearlytrade.near"
+          ],
+          [
+            "2192",
+            "lock_6.nearlytrade.near"
+          ],
+          [
+            "2549",
+            "lock_7.nearlytrade.near"
+          ],
+          [
+            "2596",
+            "lock_8.nearlytrade.near"
+          ]
+        ],
+        "lockerStateQueries": {
+          "view_account": {
+            "request": {
+              "request_type": "view_account",
+              "block_id": "4XZCsEZKiFTt8NNGQd2Qtvi8EEj3pLMGo8usDq4KNVnv",
+              "account_id": "lock2.nearlytrade.near"
+            },
+            "response": {
+              "amount": "3763848647435727209970532",
+              "block_hash": "4XZCsEZKiFTt8NNGQd2Qtvi8EEj3pLMGo8usDq4KNVnv",
+              "block_height": 221393047,
+              "code_hash": "H2hLLyZ9k5Z5SVRBPrj7Ke9NQMpsENqN5SoSMf52gCHe",
+              "locked": "0",
+              "storage_paid_at": 0,
+              "storage_usage": 154626
+            }
+          },
+          "view_code": {
+            "request": {
+              "request_type": "view_code",
+              "block_id": "4XZCsEZKiFTt8NNGQd2Qtvi8EEj3pLMGo8usDq4KNVnv",
+              "account_id": "lock2.nearlytrade.near"
+            },
+            "response": {
+              "block_hash": "4XZCsEZKiFTt8NNGQd2Qtvi8EEj3pLMGo8usDq4KNVnv",
+              "block_height": 221393047,
+              "hash": "H2hLLyZ9k5Z5SVRBPrj7Ke9NQMpsENqN5SoSMf52gCHe"
+            }
+          },
+          "view_access_key_list": {
+            "request": {
+              "request_type": "view_access_key_list",
+              "block_id": "4XZCsEZKiFTt8NNGQd2Qtvi8EEj3pLMGo8usDq4KNVnv",
+              "account_id": "lock2.nearlytrade.near"
+            },
+            "response": {
+              "block_hash": "4XZCsEZKiFTt8NNGQd2Qtvi8EEj3pLMGo8usDq4KNVnv",
+              "block_height": 221393047,
+              "keys": "[0 key entries; see accessKeyCount]"
+            }
+          },
+          "contract_source_metadata": {
+            "request": {
+              "request_type": "call_function",
+              "block_id": "4XZCsEZKiFTt8NNGQd2Qtvi8EEj3pLMGo8usDq4KNVnv",
+              "account_id": "lock2.nearlytrade.near",
+              "method_name": "contract_source_metadata",
+              "args_base64": "e30="
+            },
+            "response": {
+              "block_hash": "4XZCsEZKiFTt8NNGQd2Qtvi8EEj3pLMGo8usDq4KNVnv",
+              "block_height": 221393047,
+              "logs": [],
+              "decoded_result": {
+                "version": "0.2.0",
+                "link": "https://github.com/sam3dsol/Nearlytrade",
+                "standards": [
+                  {
+                    "standard": "nep330",
+                    "version": "1.3.0"
+                  }
+                ],
+                "build_info": null
+              }
+            }
+          }
+        },
+        "lockerCodeVerification": {
+          "viewAccountCodeHash": "H2hLLyZ9k5Z5SVRBPrj7Ke9NQMpsENqN5SoSMf52gCHe",
+          "viewCodeHash": "H2hLLyZ9k5Z5SVRBPrj7Ke9NQMpsENqN5SoSMf52gCHe",
+          "wasmBytes": 154314,
+          "sha256": "ee2a2d48c807f67bf8af8fdbc29aceffc20bc3218d597326cfc034f6a8868c79",
+          "matchesCurrentSavedWasm": true,
+          "accessKeyCount": 0
+        }
+      },
+      "tokenStateQueries": {
+        "accountId": "singularty.nearlytrade.near",
+        "blockHeight": 221393047,
+        "blockHash": "4XZCsEZKiFTt8NNGQd2Qtvi8EEj3pLMGo8usDq4KNVnv",
+        "codeHash": "11111111111111111111111111111111",
+        "globalContractHash": "1uGuBEpx3dFRDrr2wNzm5Vcb5sF3jWY3AKQ3Gopd6we",
+        "wasmBytes": 15701,
+        "sha256": "003b1b46bfe37276642e126f3095265a10d5d2c81619bd2de1e7523e80dc2625",
+        "accessKeyCount": 0,
+        "queries": {
+          "account": {
+            "request": {
+              "request_type": "view_account",
+              "block_id": "4XZCsEZKiFTt8NNGQd2Qtvi8EEj3pLMGo8usDq4KNVnv",
+              "account_id": "singularty.nearlytrade.near"
+            },
+            "response": {
+              "amount": "2350990571225997900011869",
+              "block_hash": "4XZCsEZKiFTt8NNGQd2Qtvi8EEj3pLMGo8usDq4KNVnv",
+              "block_height": 221393047,
+              "code_hash": "11111111111111111111111111111111",
+              "global_contract_hash": "1uGuBEpx3dFRDrr2wNzm5Vcb5sF3jWY3AKQ3Gopd6we",
+              "locked": "0",
+              "storage_paid_at": 0,
+              "storage_usage": 125997
+            }
+          },
+          "code": {
+            "request": {
+              "request_type": "view_code",
+              "block_id": "4XZCsEZKiFTt8NNGQd2Qtvi8EEj3pLMGo8usDq4KNVnv",
+              "account_id": "singularty.nearlytrade.near"
+            },
+            "response": {
+              "block_hash": "4XZCsEZKiFTt8NNGQd2Qtvi8EEj3pLMGo8usDq4KNVnv",
+              "block_height": 221393047,
+              "hash": "1uGuBEpx3dFRDrr2wNzm5Vcb5sF3jWY3AKQ3Gopd6we"
+            }
+          },
+          "keys": {
+            "request": {
+              "request_type": "view_access_key_list",
+              "block_id": "4XZCsEZKiFTt8NNGQd2Qtvi8EEj3pLMGo8usDq4KNVnv",
+              "account_id": "singularty.nearlytrade.near"
+            },
+            "response": {
+              "block_hash": "4XZCsEZKiFTt8NNGQd2Qtvi8EEj3pLMGo8usDq4KNVnv",
+              "block_height": 221393047,
+              "keys": "[0 key entries; see accessKeyCount]"
+            }
+          }
+        }
+      },
+      "interpretation": "Sample-level receipt evidence only. Does not establish exact locker source provenance, general behavior across claims, payout completion, or financial reconciliation."
+    }
+  ]
+}

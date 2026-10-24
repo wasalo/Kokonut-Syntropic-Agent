@@ -1,6 +1,6 @@
 # Decision 0002 — Nearly event semantic evidence
 
-**Status:** Source-verified event meanings recorded; no runtime classifier or financial reconciliation is authorized by this note.
+**Status:** Source-verified event meanings recorded; `lock_8` provenance is byte-for-byte matched to its metadata-pinned source/build; `lock2` provenance remains unresolved. No runtime classifier or financial reconciliation is authorized by this note.
 
 ## Deployed source anchor
 
@@ -46,10 +46,22 @@ In particular, `tax_paid`, `tax_holders_paid`, fee-split events, and seller hand
 
 The factory's `fees_claimed` callback is only as trustworthy as the selected locker: it books the two returned amounts but does not independently inspect the locker-to-factory asset transfers.[1]
 At finalized block **221390375**, `get_lockers` returned thresholds that imply launch **1230** uses `lock2.nearlytrade.near` and launch **3435** uses `lock_8.nearlytrade.near`.[1][7]
-The observed live account code hashes were `H2hLLyZ9k5Z5SVRBPrj7Ke9NQMpsENqN5SoSMf52gCHe` at block **221390295** and `4CMfhWsUNfXgotni5nnt9vePC1dpb4aQF8x1KQjoyG6u` at block **221391074**, respectively.[3][4][7]
-The published locker-v2 source contains a NEAR-quote path that reports `sent_quote` without checking that transfer's own result.[5] That is a warning about the published source, not proof about deployed lock2: running the repository's `legacy/rebuild.sh locker-v2` produced SHA-256 `0449fb2fc3493e2e42c3c2d8cf8cf5044738baa7d0899991f68aab1ef0e8a2cb`, while the README's expected/live SHA-256 is `ee2a2d48c807f67bf8af8fdbc29aceffc20bc3218d597326cfc034f6a8868c79`.[4][7]
-For lock_8, NEP-330 metadata at finalized block **221391118** links source commit `a476bbe47a694e2b24e7060738870065882df011`, but rebuilding that revision with its declared pinned builder and command produced SHA-256 `550293d96984abfb89cced6350d96d995f962f91dc9f788dcec7b1331de91220`, not the hash of the live account code.[6][7]
-Therefore neither published locker source currently establishes a deployed transfer guarantee in this audit. Treat `fees_claimed` as a factory-accepted locker report only—not proof of receipt or payout—until the exact locker bytecode is matched and its asset-transfer receipt tree is checked.
+
+**`lock_8.nearlytrade.near` provenance is resolved.** At the fee-claim receipt block **221386695** (`iaKXkeZ212W5iYVcFY8DK2LjbJF1qookbJof42XbgQ8`), `view_code` returned 287,404 bytes, NEAR code hash `4CMfhWsUNfXgotni5nnt9vePC1dpb4aQF8x1KQjoyG6u`, and SHA-256 `2f7bd173e4aef59e944d36ae0152d22d7d6a08c3dbac5a9a166eb954db898312`.[7]
+
+The same-block NEP-330 metadata pins source commit `a476bbe47a694e2b24e7060738870065882df011`, `linux/amd64` image `sourcescan/cargo-near:0.22.0-rust-1.97.1@sha256:7467038bdddc86484b73b416eeadce926ff59013e128e53dec5a19e1cb4b2234`, and command `cargo near build non-reproducible-wasm --locked`.[6][7][8]
+
+An independent rebuild from that commit in the pinned image, with the recorded NEP-330 metadata context, produced the same 287,404-byte artifact; SHA-256 matched and `cmp` confirmed byte-for-byte equality.[6][7][8]
+
+A bare build that omitted that metadata context produced a different artifact and is not a valid provenance comparison.[6][7][8] The pinned query and rebuild results are recorded in `docs/evidence/nearly-locker-provenance-2026-10-24.json`.
+
+**`lock2.nearlytrade.near` provenance remains unresolved.** At the fee-claim receipt block **221393047** (`4XZCsEZKiFTt8NNGQd2Qtvi8EEj3pLMGo8usDq4KNVnv`), its code was 154,314 bytes, NEAR code hash `H2hLLyZ9k5Z5SVRBPrj7Ke9NQMpsENqN5SoSMf52gCHe`, SHA-256 `ee2a2d48c807f67bf8af8fdbc29aceffc20bc3218d597326cfc034f6a8868c79`; metadata reports version `0.2.0`, a repository link without a revision, and `build_info: null`.[4][7]
+
+The current-source Linux rebuild from commit `3d59877216c93e56309f7c21568eaa3d17bccfc0` produces a different hash (`0449fb2fc3493e2e42c3c2d8cf8cf5044738baa7d0899991f68aab1ef0e8a2cb`). The deployed Wasm contains `aarch64-apple-darwin` and `/Users/soul/.cargo` paths, while the Linux rebuild contains Linux paths; this supports a host/platform mismatch but does not reproduce the deployed bytes or identify the exact source revision/build.[4][5][7]
+
+Two transaction-scoped receipt audits show matching locker-to-factory observations: transaction `EH5J4bgSdNvJtGrBnmudXkJrnm6MwSiYqdzrEWfYDtiW` for launch 3435 has a successful native `Transfer` matching `fee_near` and a successful token-contract `ft_transfer` receipt whose NEP-141 log amount matches `fee_token`; transaction `BAuSqbnFEq4BHaJ4UcaoCNBn2AT9tWF77LbpwHvaD4KJ` for launch 1230 has the same kinds of amount matches.[7][9] Both receipt graphs were complete with no failed action receipts or diagnostics. These are observations about these two transactions only—not proof for all `fees_claimed` events, not a general locker guarantee, and not a substitute for token balance reconciliation. Raw pinned receipt data is in `docs/evidence/locker-fees-claim-receipt-samples-2026-10-24.json`.
+
+Accordingly, `lock_8` source/build provenance is verified, while `lock2` provenance is not. `fees_claimed` remains a factory-accepted locker report in the general case; classify or reconcile individual transfers only from their exact receipt trees, with verified token identity and asset movement.
 
 ## Indexer boundary
 
@@ -61,10 +73,12 @@ KI persistence/reconciliation remains deferred.[1][2]
 
 ## Sources
 
-[1] https://raw.githubusercontent.com/sam3dsol/NearlyTrade/e82bfa013ea380f9dbbcb9d58e9f0af798185eab/contracts/factory/src/lib.rs — Nearly factory source at deployed commit e82bfa0
-[2] https://raw.githubusercontent.com/sam3dsol/NearlyTrade/e82bfa013ea380f9dbbcb9d58e9f0af798185eab/contracts/token-tax/src/lib.rs — Nearly tax token source at deployed commit e82bfa0
-[3] https://raw.githubusercontent.com/sam3dsol/NearlyTrade/3d59877216c93e56309f7c21568eaa3d17bccfc0/README.md — Nearly contract hash manifest at commit 3d59877
-[4] https://raw.githubusercontent.com/sam3dsol/NearlyTrade/3d59877216c93e56309f7c21568eaa3d17bccfc0/legacy/locker-v2/README.md — Nearly locker v2 hash and build record
-[5] https://raw.githubusercontent.com/sam3dsol/NearlyTrade/3d59877216c93e56309f7c21568eaa3d17bccfc0/legacy/locker-v2/src/lib.rs — Nearly published locker v2 source
-[6] https://raw.githubusercontent.com/sam3dsol/NearlyTrade/a476bbe47a694e2b24e7060738870065882df011/contracts/locker3/src/lib.rs — Nearly locker3 source at metadata-linked commit a476bbe
-[7] https://rpc.mainnet.near.org — NEAR mainnet RPC finalized block observations
+[1] https://raw.githubusercontent.com/sam3dsol/NearlyTrade/e82bfa013ea380f9dbbcb9d58e9f0af798185eab/contracts/factory/src/lib.rs
+[2] https://raw.githubusercontent.com/sam3dsol/NearlyTrade/e82bfa013ea380f9dbbcb9d58e9f0af798185eab/contracts/token-tax/src/lib.rs
+[3] https://raw.githubusercontent.com/sam3dsol/NearlyTrade/3d59877216c93e56309f7c21568eaa3d17bccfc0/README.md
+[4] https://raw.githubusercontent.com/sam3dsol/NearlyTrade/3d59877216c93e56309f7c21568eaa3d17bccfc0/legacy/locker-v2/README.md
+[5] https://raw.githubusercontent.com/sam3dsol/NearlyTrade/3d59877216c93e56309f7c21568eaa3d17bccfc0/legacy/locker-v2/src/lib.rs
+[6] https://raw.githubusercontent.com/sam3dsol/NearlyTrade/a476bbe47a694e2b24e7060738870065882df011/contracts/locker3/src/lib.rs
+[7] https://rpc.mainnet.near.org
+[8] https://raw.githubusercontent.com/sam3dsol/NearlyTrade/a476bbe47a694e2b24e7060738870065882df011/contracts/locker3/Cargo.toml
+[9] https://tx.main.fastnear.com/v0/transactions
