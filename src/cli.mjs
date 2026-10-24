@@ -6,7 +6,7 @@ import { previewNearlyTaxAllocation } from './nearly-economics-preview.mjs';
 import { evaluateNearlyFactorySnapshot, readNearlyFactorySnapshot } from './nearly-readiness.mjs';
 import { readNearlyEconomicsSnapshot } from './nearly-economics-observer.mjs';
 import { indexNearLakeBlock, indexNearLakeMessages } from './near-event-indexer.mjs';
-import { readFastNearEventLogPage } from './fastnear-event-history.mjs';
+import { readFastNearEventLogPage, readFastNearEventLogPages } from './fastnear-event-history.mjs';
 import { readFastNearTransactionAudit } from './near-transaction-audit.mjs';
 
 const USAGE = [
@@ -17,7 +17,7 @@ const USAGE = [
   '  syntropic-agent near-readiness',
   '  syntropic-agent near-economics <launchId>',
   '  syntropic-agent near-events <block-message.json> [accountId ...]',
-  '  syntropic-agent near-account-events <accountId> [resumeToken]',
+  '  syntropic-agent near-account-events <accountId> [resumeToken] [--pages <1-10>]',
   '  syntropic-agent near-tx-audit <transactionHash>',
 ].join('\n');
 
@@ -60,13 +60,27 @@ if (command === 'near-tx-audit') {
     }
   }
 } else if (command === 'near-account-events') {
-  if (!arg || extraArgs.length > 1) {
+  const pageFlagIndexes = extraArgs.flatMap((value, index) => value === '--pages' ? [index] : []);
+  const pageFlagIndex = pageFlagIndexes[0];
+  const hasPagesFlag = pageFlagIndexes.length > 0;
+  const pageCountToken = hasPagesFlag ? extraArgs[pageFlagIndex + 1] : null;
+  const pageCountValid = typeof pageCountToken === 'string' && /^(?:[1-9]|10)$/.test(pageCountToken);
+  const argumentsValid = Boolean(arg) && (hasPagesFlag
+    ? pageFlagIndexes.length === 1 && pageFlagIndex <= 1 && extraArgs.length === pageFlagIndex + 2 && pageCountValid
+    : extraArgs.length <= 1);
+  if (!argumentsValid) {
     fail(USAGE, 2);
   } else {
     try {
-      const page = await readFastNearEventLogPage({ accountId: arg, resumeToken: extraArgs[0] });
-      process.stdout.write(`${JSON.stringify(page, null, 2)}\n`);
-      if (page.pageStatus === 'partial') process.exitCode = 1;
+      const report = hasPagesFlag
+        ? await readFastNearEventLogPages({
+          accountId: arg,
+          resumeToken: pageFlagIndex === 1 ? extraArgs[0] : undefined,
+          maxPages: Number(pageCountToken),
+        })
+        : await readFastNearEventLogPage({ accountId: arg, resumeToken: extraArgs[0] });
+      process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
+      if (report.pageStatus === 'partial') process.exitCode = 1;
     } catch (error) {
       fail(`NEAR account event history failed: ${error instanceof Error ? error.message : String(error)}`);
     }

@@ -227,7 +227,7 @@ test('near-events reports malformed local input and usage errors', () => {
   assert.match(missing.stderr, /Usage:/);
 });
 
-test('near-account-events is listed in usage and rejects invalid argument counts before network access', () => {
+test('near-account-events lists bounded pagination, validates options, and rejects invalid argument counts before network access', () => {
   const missing = spawnSync(process.execPath, [cli, 'near-account-events'], { encoding: 'utf8' });
   assert.equal(missing.status, 2);
   assert.match(missing.stderr, /near-account-events <accountId>/);
@@ -235,6 +235,37 @@ test('near-account-events is listed in usage and rejects invalid argument counts
   const extra = spawnSync(process.execPath, [cli, 'near-account-events', 'token.near', 'cursor', 'extra'], { encoding: 'utf8' });
   assert.equal(extra.status, 2);
   assert.match(extra.stderr, /near-account-events <accountId>/);
+
+  const invalidPages = spawnSync(process.execPath, [cli, 'near-account-events', 'token.near', '--pages', '11'], { encoding: 'utf8' });
+  assert.equal(invalidPages.status, 2);
+  assert.match(invalidPages.stderr, /near-account-events <accountId>/);
+});
+
+test('near-account-events CLI reads the requested bounded page count and returns the last cursor status', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'syntropic-account-pages-'));
+  try {
+    const preloadPath = join(dir, 'mock-fastnear.mjs');
+    const mockCode = `
+      let page = 0;
+      globalThis.fetch = async (url, options) => {
+        if (url !== 'https://tx.main.fastnear.com/v0/account') throw new Error('unexpected endpoint');
+        const request = JSON.parse(options.body);
+        page += 1;
+        if (page === 2 && request.resume_token !== 'cursor-2') throw new Error('missing second-page cursor');
+        const resume_token = page === 1 ? 'cursor-2' : null;
+        return { ok: true, status: 200, json: async () => ({ account_txs: [], resume_token, txs_count: 0 }) };
+      };
+    `;
+    writeFileSync(preloadPath, mockCode);
+    const result = spawnSync(process.execPath, ['--import', preloadPath, cli, 'near-account-events', 'token.near', '--pages', '2'], { encoding: 'utf8' });
+    assert.equal(result.status, 0, result.stderr);
+    const report = JSON.parse(result.stdout);
+    assert.equal(report.pagesRead, 2);
+    assert.equal(report.pageStatus, 'history_exhausted');
+    assert.equal(report.pageSummaries[1].resumeTokenUsed, 'cursor-2');
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
 });
 
 test('CLI reports malformed JSON and usage errors with a distinct usage exit code', () => {

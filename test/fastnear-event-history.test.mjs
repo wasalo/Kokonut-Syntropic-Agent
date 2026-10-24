@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readFastNearEventLogPage } from '../src/fastnear-event-history.mjs';
+import { readFastNearEventLogPage, readFastNearEventLogPages } from '../src/fastnear-event-history.mjs';
 
 function response(body, status = 200) {
   return { ok: status >= 200 && status < 300, status, json: async () => body };
@@ -97,6 +97,112 @@ test('hydrates account event-log history and preserves receipt-level event prove
     executionStatus: { SuccessValue: '' },
   });
   assert.equal(JSON.stringify(result).includes('test-only-key'), false);
+});
+
+test('reads bounded account-event pages in order, deduplicates repeated events, and returns the next cursor', async () => {
+  const accountRequests = [];
+  const transactionRequests = [];
+  const tx2 = transaction('tx-2');
+  tx2.receipts[0].receipt.receipt_id = 'receipt-2';
+  tx2.receipts[0].execution_outcome.id = 'receipt-2';
+  tx2.receipts[0].execution_outcome.block_hash = 'receipt-block-hash-2';
+  const transactionByHash = new Map([['tx-1', transaction('tx-1')], ['tx-2', tx2]]);
+
+  const fetchImpl = async (url, init) => {
+    const body = JSON.parse(init.body);
+    if (url.endsWith('/v0/account')) {
+      accountRequests.push(body);
+      return response(accountRequests.length === 1
+        ? accountPage(['tx-1'], 'cursor-2')
+        : accountPage(['tx-1', 'tx-2'], 'cursor-3'));
+    }
+    if (url.endsWith('/v0/transactions')) {
+      transactionRequests.push(body.tx_hashes);
+      return response({ transactions: body.tx_hashes.map((hash) => transactionByHash.get(hash)) });
+    }
+    throw new Error(`unexpected URL: ${url}`);
+  };
+
+  const result = await readFastNearEventLogPages({ accountId: 'token.near', maxPages: 2, fetchImpl });
+
+  assert.deepEqual(accountRequests.map(({ resume_token }) => resume_token ?? null), [null, 'cursor-2']);
+  assert.deepEqual(transactionRequests, [['tx-1'], ['tx-1', 'tx-2']]);
+  assert.equal(result.pagesRead, 2);
+  assert.equal(result.pageStatus, 'page_limit_reached');
+  assert.equal(result.hasMore, true);
+  assert.equal(result.pageLimitReached, true);
+  assert.equal(result.nextResumeToken, 'cursor-3');
+  assert.equal(result.accountRowsReceived, 3);
+  assert.equal(result.transactionsRequested, 3);
+  assert.equal(result.transactionsHydrated, 3);
+  assert.equal(result.events.length, 2);
+  assert.equal(result.duplicateEventCount, 1);
+  assert.deepEqual(result.pageSummaries.map(({ pageStatus }) => pageStatus), ['page_processed', 'page_processed']);
+});
+
+test('counts duplicate quarantined event IDs separately from parsed-event duplicates', async () => {
+  const malformed = 'EVENT_JSON:{not-json';
+  const badTx = transaction('tx-bad', { logs: [malformed] });
+  let accountPages = 0;
+  const fetchImpl = async (url) => {
+    if (url.endsWith('/v0/account')) {
+      accountPages += 1;
+      return response(accountPage(['tx-bad'], accountPages === 1 ? 'cursor-2' : null));
+    }
+    return response({ transactions: [badTx] });
+  };
+  const result = await readFastNearEventLogPages({ accountId: 'token.near', maxPages: 2, fetchImpl });
+  assert.equal(result.events.length, 0);
+  assert.equal(result.quarantined.length, 1);
+  assert.equal(result.duplicateEventCount, 0);
+  assert.equal(result.duplicateQuarantinedCount, 1);
+});
+
+test('stops when FastNear reports no more account history', async () => {
+  let accountPages = 0;
+  const fetchImpl = async (url) => {
+    if (url.endsWith('/v0/account')) {
+      accountPages += 1;
+      return response(accountPage(['tx-1'], null));
+    }
+    return response({ transactions: [transaction('tx-1')] });
+  };
+  const result = await readFastNearEventLogPages({ accountId: 'token.near', maxPages: 5, fetchImpl });
+  assert.equal(accountPages, 1);
+  assert.equal(result.pageStatus, 'history_exhausted');
+  assert.equal(result.hasMore, false);
+  assert.equal(result.pageLimitReached, false);
+  assert.equal(result.events.length, 1);
+});
+
+test('marks repeated resume cursors partial and stops instead of looping', async () => {
+  let accountPages = 0;
+  const fetchImpl = async (url) => {
+    if (url.endsWith('/v0/account')) {
+      accountPages += 1;
+      return response(accountPage(['tx-1'], 'cursor-loop'));
+    }
+    return response({ transactions: [transaction('tx-1')] });
+  };
+  const result = await readFastNearEventLogPages({ accountId: 'token.near', maxPages: 5, fetchImpl });
+  assert.equal(accountPages, 2);
+  assert.equal(result.pageStatus, 'partial');
+  assert.equal(result.cursorLoopDetected, true);
+  assert.equal(result.hasMore, true);
+});
+
+test('validates bounded page count before making provider requests', async () => {
+  let requests = 0;
+  const fetchImpl = async () => { requests += 1; return response({}); };
+  await assert.rejects(
+    readFastNearEventLogPages({ accountId: 'token.near', maxPages: 0, fetchImpl }),
+    /maxPages must be an integer from 1 to 10/,
+  );
+  await assert.rejects(
+    readFastNearEventLogPages({ accountId: 'token.near', maxPages: 11, fetchImpl }),
+    /maxPages must be an integer from 1 to 10/,
+  );
+  assert.equal(requests, 0);
 });
 
 test('does not infer the emitter from an account appearing in event data', async () => {

@@ -256,3 +256,115 @@ export async function readFastNearEventLogPage({
     semantics: 'One indexed account-event page only. Events are filtered to the exact emitting account; logs are observations, not proof of successful settlement, payout, or financial classification. No KI persistence is performed.',
   };
 }
+
+/** Read a bounded number of account-event pages sequentially; no history is persisted. */
+export async function readFastNearEventLogPages({
+  accountId,
+  resumeToken,
+  limit = 20,
+  maxPages,
+  apiKey = process.env.FASTNEAR_API_KEY,
+  fetchImpl = globalThis.fetch,
+} = {}) {
+  if (!Number.isInteger(maxPages) || maxPages < 1 || maxPages > 10) {
+    throw new TypeError('maxPages must be an integer from 1 to 10');
+  }
+  validatePageOptions({ accountId, resumeToken, limit });
+  if (typeof fetchImpl !== 'function') throw new TypeError('fetchImpl must be a function');
+
+  const pageSummaries = [];
+  const eventMap = new Map();
+  const quarantineMap = new Map();
+  const missingTransactionHashes = new Set();
+  const seenCursors = new Set(resumeToken ? [resumeToken] : []);
+  let currentResumeToken = resumeToken;
+  let nextResumeToken = null;
+  let accountRowsReceived = 0;
+  let rejectedAccountRows = 0;
+  let transactionsRequested = 0;
+  let transactionsHydrated = 0;
+  let duplicateEventCount = 0;
+  let duplicateQuarantinedCount = 0;
+  let cursorLoopDetected = false;
+  let partialPageCount = 0;
+
+  for (let pageNumber = 1; pageNumber <= maxPages; pageNumber += 1) {
+    const page = await readFastNearEventLogPage({
+      accountId,
+      resumeToken: currentResumeToken,
+      limit,
+      apiKey,
+      fetchImpl,
+    });
+    accountRowsReceived += page.accountRowsReceived;
+    rejectedAccountRows += page.rejectedAccountRows;
+    transactionsRequested += page.transactionsRequested;
+    transactionsHydrated += page.transactionsHydrated;
+    for (const hash of page.missingTransactionHashes) missingTransactionHashes.add(hash);
+    for (const event of page.events) {
+      if (eventMap.has(event.eventId)) duplicateEventCount += 1;
+      else eventMap.set(event.eventId, event);
+    }
+    for (const event of page.quarantined) {
+      if (quarantineMap.has(event.eventId)) duplicateQuarantinedCount += 1;
+      else quarantineMap.set(event.eventId, event);
+    }
+    if (page.pageStatus === 'partial') partialPageCount += 1;
+
+    nextResumeToken = page.nextResumeToken;
+    pageSummaries.push({
+      pageNumber,
+      resumeTokenUsed: currentResumeToken ?? null,
+      nextResumeToken,
+      accountRowsReceived: page.accountRowsReceived,
+      rejectedAccountRows: page.rejectedAccountRows,
+      transactionsRequested: page.transactionsRequested,
+      transactionsHydrated: page.transactionsHydrated,
+      missingTransactionHashCount: page.missingTransactionHashes.length,
+      events: page.events.length,
+      quarantined: page.quarantined.length,
+      pageStatus: page.pageStatus,
+    });
+
+    if (!nextResumeToken) break;
+    if (seenCursors.has(nextResumeToken)) {
+      cursorLoopDetected = true;
+      break;
+    }
+    seenCursors.add(nextResumeToken);
+    currentResumeToken = nextResumeToken;
+  }
+
+  const hasMore = Boolean(nextResumeToken);
+  const pageStatus = cursorLoopDetected || partialPageCount > 0
+    ? 'partial'
+    : hasMore ? 'page_limit_reached' : 'history_exhausted';
+  const sortByChainPosition = (left, right) =>
+    (left.blockHeight ?? Number.MAX_SAFE_INTEGER) - (right.blockHeight ?? Number.MAX_SAFE_INTEGER)
+      || left.eventId.localeCompare(right.eventId);
+
+  return {
+    schemaVersion: '1.0',
+    inputFormat: 'fastnear-transactions-api',
+    accountId,
+    query: { isEventLog: true, oldestFirst: true, limit, maxPages, resumeToken: resumeToken ?? null },
+    pagesRead: pageSummaries.length,
+    accountRowsReceived,
+    rejectedAccountRows,
+    transactionsRequested,
+    transactionsHydrated,
+    missingTransactionHashes: [...missingTransactionHashes].sort(),
+    nextResumeToken,
+    hasMore,
+    pageLimitReached: pageStatus === 'page_limit_reached',
+    cursorLoopDetected,
+    partialPageCount,
+    duplicateEventCount,
+    duplicateQuarantinedCount,
+    pageStatus,
+    pageSummaries,
+    events: [...eventMap.values()].sort(sortByChainPosition),
+    quarantined: [...quarantineMap.values()].sort(sortByChainPosition),
+    semantics: 'Bounded sequential account-event page read only. page_limit_reached means more provider history remains; history_exhausted means this query returned no further cursor. Partial pages or cursor cycles are surfaced. Results are not a durable or independently complete history, events are not economic classifications or payout proof, and no KI persistence is performed.',
+  };
+}
