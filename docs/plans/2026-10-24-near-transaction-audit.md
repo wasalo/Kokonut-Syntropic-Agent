@@ -46,8 +46,8 @@
 **Steps:**
 1. Add a failing injected-fetch test asserting exact endpoint, `{ tx_hashes: [hash] }`, optional Bearer header without exposing its value, and one matching transaction returned.
 2. Run the focused test to verify it fails for the missing reader.
-3. Implement one transaction lookup, exact hash matching, HTTP/JSON/schema error handling, and route the response into the pure auditor.
-4. Add tests for HTTP errors, malformed JSON/collections, missing transaction, and provider response containing a different hash.
+3. Implement one transaction lookup, exact hash matching, HTTP/JSON/schema error handling, and route the response into the pure auditor. The pure auditor must also make a root `execution_outcome.id` that differs from `transaction.hash` partial rather than silently accepting the mismatch.
+4. Add tests for HTTP errors, malformed JSON/collections, missing transaction, provider response containing a different hash, and mismatched root execution outcome ID.
 5. Run focused and full suites.
 
 ## Task 3: Expose the CLI and document the limits
