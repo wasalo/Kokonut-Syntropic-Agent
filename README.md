@@ -10,9 +10,10 @@ Current slices:
 - **Nearly model validator and tax preview:** validate the local contract-aligned configuration and show exact-rational token-tax examples; these functions do not query contracts or authorize launch.
 - **Nearly factory readiness observer:** read public mainnet factory state at one pinned final block, compare verifiable settings with the contract-aligned model, and report unresolved legal/recipient/token-specific gates. It is read-only and never authorizes launch.
 - **Nearly launch-state observer:** read one launch's factory record, per-launch fee settings, tax view, token state, locker and DCL position at one pinned final block. It reports current state only; it does not index historical events or prove completed payouts.
-- **NEAR event-log batch indexer core:** parse `EVENT_JSON:` logs from caller-supplied, contiguous NEAR block messages compatible with the NEAR Lake streamer shape, preserve block/shard/execution/receipt/log provenance, and quarantine malformed event payloads. It does not fetch historical data or infer tax/reward/burn/fee business meaning.
+- **NEAR event-log batch indexer core:** parse `EVENT_JSON:` logs from caller-supplied, contiguous NEAR block messages compatible with the NEAR Lake streamer shape, preserve block/shard/execution/receipt/log provenance, and quarantine malformed event payloads. It does not infer tax/reward/burn/fee business meaning.
+- **FastNear account-event page reader:** query one paginated account-event page, hydrate transaction and receipt outcomes in batches, retain only logs emitted by the exact requested account, and return the provider's cursor plus any incomplete lookups. It is read-only and does not persist data.
 
-These are foundations, not complete epics or production integrations. The manifest does not establish identity or register anything on-chain. The factory observer does not inspect a launched token. The launch-state observer does not prove historical event completeness, completed treasury receipts, beneficiary control, legal signoff, or security approval. The event-log indexer is an offline parser for supplied data, not a configured backfill/indexing service.
+These are foundations, not complete epics or production integrations. The manifest does not establish identity or register anything on-chain. The factory observer does not inspect a launched token. The launch-state observer does not prove historical event completeness, completed treasury receipts, beneficiary control, legal signoff, or security approval. Event tooling currently processes caller-supplied block batches or one FastNear account-history page at a time; it is not a continuous, durable, full-history service.
 
 The PRD's KI-dependent work is intentionally deferred until the KI refactor is complete. No KI schema, migration, connector, data model, or financial reconciler is included here.
 
@@ -37,6 +38,7 @@ npm run agent -- preview 10000
 npm run agent -- near-readiness
 npm run agent -- near-economics LAUNCH_ID
 npm run agent -- near-events examples/near-event-message.synthetic.json
+npm run agent -- near-account-events ACCOUNT_ID [RESUME_TOKEN]
 ```
 
 `near-readiness` reads public NEAR mainnet factory state at a pinned final block. A blocking mismatch is printed as JSON and exits nonzero. The report is observational only and never authorizes a launch.
@@ -44,6 +46,8 @@ npm run agent -- near-events examples/near-event-message.synthetic.json
 `near-economics` takes a decimal Nearly launch ID and reads that launch's current factory, token, locker, and DCL position state at one pinned final block. It reports the current factory fee default separately from the specific launch's stored fee options; older launches may retain different settings. Unclaimed DCL position fees are raw balances, not proof of creator payout or realized treasury receipts. Historical events and completed payout verification are not included. Replace `LAUNCH_ID` with the numeric ID returned by Nearly; this command is read-only.
 
 `near-events <message.json> [accountId ...]` parses local NEAR block-message JSON; input may be one message or an ordered JSON array of messages. Arrays must contain contiguous, increasing block heights. Optional account IDs filter by the emitting `executor_id`. The indexer validates the `EVENT_JSON:` envelope, preserves raw logs and block/shard/execution/receipt/log provenance, deduplicates event IDs, and quarantines malformed event JSON. It does not fetch NEAR block data, infer that an event represents tax/reward/burn/fee activity, reconstruct transaction trees, prove payouts, or write to KI. The checked-in example is synthetic and is not a Nearly launch or on-chain observation.
+
+`near-account-events ACCOUNT_ID [RESUME_TOKEN]` fetches one FastNear account-event page (20 entries by default), hydrates transaction/receipt execution outcomes in batches of up to 20 hashes, and filters logs to the exact emitting account. It returns `nextResumeToken` for the next page; rerun with that token to continue. A page with missing transaction lookups or rejected account rows is marked `partial` and exits nonzero. Set `FASTNEAR_API_KEY` in the process environment if you have one; the CLI never prints or stores it. Event logs and execution status remain observations: the command does not classify economics, verify payouts, or write to KI.
 
 The example manifest's UUID and hashes are illustrative only, not registered Kokonut identity or approved policy. The Nearly example is a local product-model fixture, not deployable factory input or launch approval. `preview` expects taxable token base units as an integer string.
 

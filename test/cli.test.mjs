@@ -224,6 +224,16 @@ test('near-events reports malformed local input and usage errors', () => {
   assert.match(missing.stderr, /Usage:/);
 });
 
+test('near-account-events is listed in usage and rejects invalid argument counts before network access', () => {
+  const missing = spawnSync(process.execPath, [cli, 'near-account-events'], { encoding: 'utf8' });
+  assert.equal(missing.status, 2);
+  assert.match(missing.stderr, /near-account-events <accountId>/);
+
+  const extra = spawnSync(process.execPath, [cli, 'near-account-events', 'token.near', 'cursor', 'extra'], { encoding: 'utf8' });
+  assert.equal(extra.status, 2);
+  assert.match(extra.stderr, /near-account-events <accountId>/);
+});
+
 test('CLI reports malformed JSON and usage errors with a distinct usage exit code', () => {
   const malformed = runCli(['manifest'], '{not json');
   assert.equal(malformed.status, 1);

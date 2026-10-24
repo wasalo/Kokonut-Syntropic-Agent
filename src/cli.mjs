@@ -6,6 +6,7 @@ import { previewNearlyTaxAllocation } from './nearly-economics-preview.mjs';
 import { evaluateNearlyFactorySnapshot, readNearlyFactorySnapshot } from './nearly-readiness.mjs';
 import { readNearlyEconomicsSnapshot } from './nearly-economics-observer.mjs';
 import { indexNearLakeBlock, indexNearLakeMessages } from './near-event-indexer.mjs';
+import { readFastNearEventLogPage } from './fastnear-event-history.mjs';
 
 const USAGE = [
   'Usage:',
@@ -15,6 +16,7 @@ const USAGE = [
   '  syntropic-agent near-readiness',
   '  syntropic-agent near-economics <launchId>',
   '  syntropic-agent near-events <block-message.json> [accountId ...]',
+  '  syntropic-agent near-account-events <accountId> [resumeToken]',
 ].join('\n');
 
 function fail(message, code = 1) {
@@ -41,6 +43,18 @@ if (command === 'near-events') {
       } else {
         fail(`NEAR event indexing failed: ${error instanceof Error ? error.message : String(error)}`);
       }
+    }
+  }
+} else if (command === 'near-account-events') {
+  if (!arg || extraArgs.length > 1) {
+    fail(USAGE, 2);
+  } else {
+    try {
+      const page = await readFastNearEventLogPage({ accountId: arg, resumeToken: extraArgs[0] });
+      process.stdout.write(`${JSON.stringify(page, null, 2)}\n`);
+      if (page.pageStatus === 'partial') process.exitCode = 1;
+    } catch (error) {
+      fail(`NEAR account event history failed: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
 } else if (command === 'near-economics') {
