@@ -3,12 +3,19 @@ const isRecord = (value) => value !== null && typeof value === 'object' && !Arra
 function executionStatusName(outcome) {
   const status = outcome?.status;
   if (typeof status === 'string') return status;
-  if (isRecord(status)) return Object.keys(status)[0] ?? null;
+  if (isRecord(status)) {
+    const keys = Object.keys(status);
+    return keys.length === 1 ? keys[0] : null;
+  }
   return null;
 }
 
+function hasRecognizedExecutionStatus(outcome) {
+  return ['SuccessValue', 'SuccessReceiptId', 'Failure'].includes(executionStatusName(outcome));
+}
+
 function isSuccessful(outcome) {
-  return executionStatusName(outcome)?.startsWith('Success') ?? false;
+  return ['SuccessValue', 'SuccessReceiptId'].includes(executionStatusName(outcome));
 }
 
 function nativeTransferObservation(action, destination, successful, actionIndex, source, diagnostics) {
@@ -115,6 +122,9 @@ export function auditNearTransaction(input) {
   const malformedCollections = !receiptsValid || !dataReceiptsValid;
 
   const rootOutcome = input.execution_outcome.outcome;
+  if (!hasRecognizedExecutionStatus(rootOutcome)) {
+    diagnostics.push('root execution has missing, malformed, or unrecognized status');
+  }
   if (typeof input.execution_outcome.id !== 'string' || !input.execution_outcome.id) {
     diagnostics.push('root execution outcome is missing an outcome ID');
   }
@@ -142,6 +152,9 @@ export function auditNearTransaction(input) {
     if (!isRecord(execution) || !isRecord(outcome)) {
       diagnostics.push(`action receipt ${receiptId} is missing execution_outcome.outcome`);
     } else {
+      if (!hasRecognizedExecutionStatus(outcome)) {
+        diagnostics.push(`action receipt ${receiptId} has missing, malformed, or unrecognized status`);
+      }
       if (typeof execution.id === 'string' && execution.id) outcomeIdEntries.push(execution.id);
       else diagnostics.push(`action receipt ${receiptId} is missing an execution outcome ID`);
       if (!Array.isArray(outcome.logs)) diagnostics.push(`action receipt ${receiptId} outcome logs must be an array`);

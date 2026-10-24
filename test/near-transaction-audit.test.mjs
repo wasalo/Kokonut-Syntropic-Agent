@@ -263,3 +263,46 @@ test('marks malformed action lists partial while retaining receipt provenance', 
   assert.equal(report.actionReceipts[0].receiptId, 'r1');
   assert.match(report.diagnostics.join(' '), /actions must be an array/i);
 });
+
+test('does not treat unexpected root statuses as successful native transfers', () => {
+  for (const status of ['SuccessGarbage', { SuccessValue: '', Failure: {} }, 'Unknown', undefined]) {
+    const malformed = structuredClone(transaction);
+    malformed.transaction.actions = [{ Transfer: { deposit: '5' } }];
+    malformed.execution_outcome.outcome.status = status;
+    const report = auditNearTransaction(malformed);
+
+    assert.equal(report.status, 'partial', `status ${JSON.stringify(status)}`);
+    assert.deepEqual(report.rootExecution.actions, [], `status ${JSON.stringify(status)}`);
+    assert.deepEqual(report.rootExecution.executionStatus, status ?? null);
+    assert.match(report.diagnostics.join(' '), /root execution.*status/i);
+  }
+});
+
+test('does not treat unexpected receipt statuses as successful native transfers', () => {
+  for (const status of ['SuccessGarbage', { SuccessValue: '', Failure: {} }, 'Unknown', undefined]) {
+    const malformed = structuredClone(transaction);
+    malformed.receipts[0].receipt.receipt.Action.actions = [{ Transfer: { deposit: '5' } }];
+    malformed.receipts[0].receipt.receiver_id = 'bob.near';
+    malformed.receipts[0].execution_outcome.id = 'r1';
+    malformed.receipts[0].execution_outcome.outcome.status = status;
+    const report = auditNearTransaction(malformed);
+
+    assert.equal(report.status, 'partial', `status ${JSON.stringify(status)}`);
+    assert.deepEqual(report.actionReceipts[0].actions, [], `status ${JSON.stringify(status)}`);
+    assert.deepEqual(report.actionReceipts[0].executionStatus, status ?? null);
+    assert.match(report.diagnostics.join(' '), /receipt r1.*status/i);
+  }
+});
+
+test('recognizes exact Failure as terminal without making the audit partial', () => {
+  const failed = structuredClone(transaction);
+  failed.transaction.actions = [{ Transfer: { deposit: '5' } }];
+  failed.execution_outcome.outcome.receipt_ids = [];
+  failed.receipts = [];
+  failed.execution_outcome.outcome.status = { Failure: { error_message: 'failed' } };
+  const report = auditNearTransaction(failed);
+
+  assert.equal(report.status, 'complete');
+  assert.deepEqual(report.rootExecution.actions, []);
+  assert.deepEqual(report.diagnostics, []);
+});
