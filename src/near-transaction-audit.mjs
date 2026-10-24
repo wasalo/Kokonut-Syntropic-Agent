@@ -11,19 +11,35 @@ function isSuccessful(outcome) {
   return executionStatusName(outcome)?.startsWith('Success') ?? false;
 }
 
-function receiptActions(receipt, successful) {
+function nativeTransferObservation(action, destination, successful, actionIndex, source, diagnostics) {
+  const deposit = action.Transfer?.deposit;
+  const validDeposit = typeof deposit === 'string' && /^\d+$/.test(deposit);
+  const validDestination = typeof destination === 'string' && destination.trim().length > 0;
+  if (successful && (!validDeposit || !validDestination)) {
+    const missing = [!validDeposit && 'deposit', !validDestination && 'destination'].filter(Boolean).join(' and ');
+    diagnostics.push(`${source} native transfer has invalid or missing ${missing}`);
+    return {
+      type: 'native_transfer', observation: 'incomplete_successful_transfer',
+      amount: validDeposit ? deposit : null,
+      destination: validDestination ? destination : null,
+      actionIndex,
+    };
+  }
+  return successful ? {
+    type: 'native_transfer', observation: source === 'root transaction' ? 'successful_transaction_action' : 'successful_receipt_action',
+    amount: deposit, destination, actionIndex,
+  } : null;
+}
+
+function receiptActions(receipt, successful, diagnostics, receiptId) {
   const actions = receipt?.receipt?.Action?.actions;
   if (!Array.isArray(actions)) return [];
   const observed = [];
   for (const [actionIndex, action] of actions.entries()) {
     if (!isRecord(action)) continue;
     if (Object.hasOwn(action, 'Transfer')) {
-      if (successful) observed.push({
-        type: 'native_transfer', observation: 'successful_receipt_action',
-        amount: typeof action.Transfer?.deposit === 'string' ? action.Transfer.deposit : null,
-        destination: receipt.receiver_id ?? null,
-        actionIndex,
-      });
+      const transfer = nativeTransferObservation(action, receipt.receiver_id, successful, actionIndex, `receipt ${receiptId}`, diagnostics);
+      if (transfer) observed.push(transfer);
       continue;
     }
     const call = action.FunctionCall;
@@ -34,20 +50,28 @@ function receiptActions(receipt, successful) {
   return observed;
 }
 
-function transactionActions(transaction, successful) {
-  if (!Array.isArray(transaction?.actions)) return [];
-  return transaction.actions.flatMap((action, actionIndex) => {
-    if (!isRecord(action) || !Object.hasOwn(action, 'Transfer') || !successful) return [];
-    return [{
-      type: 'native_transfer', observation: 'successful_transaction_action',
-      amount: typeof action.Transfer?.deposit === 'string' ? action.Transfer.deposit : null,
-      destination: transaction.receiver_id ?? null,
-      actionIndex,
-    }];
-  });
+function transactionActions(transaction, successful, diagnostics) {
+  if (!Array.isArray(transaction?.actions)) {
+    diagnostics.push('transaction actions must be an array');
+    return [];
+  }
+  const observed = [];
+  for (const [actionIndex, action] of transaction.actions.entries()) {
+    if (!isRecord(action)) continue;
+    if (Object.hasOwn(action, 'Transfer')) {
+      const transfer = nativeTransferObservation(action, transaction.receiver_id, successful, actionIndex, 'root transaction', diagnostics);
+      if (transfer) observed.push(transfer);
+      continue;
+    }
+    const call = action.FunctionCall;
+    if (isRecord(call) && call.method_name === 'ft_transfer') {
+      observed.push({ type: 'function_call', methodName: 'ft_transfer', observation: 'call_only_not_transfer_proof' });
+    }
+  }
+  return observed;
 }
 
-function rootProvenance(transaction, execution) {
+function rootProvenance(transaction, execution, actions) {
   return {
     outcomeId: execution?.id ?? null,
     blockHeight: Number.isSafeInteger(execution?.block_height) ? execution.block_height : null,
@@ -57,7 +81,7 @@ function rootProvenance(transaction, execution) {
     logs: Array.isArray(execution?.outcome?.logs)
       ? [...execution.outcome.logs]
       : (execution?.outcome?.logs ?? null),
-    actions: transactionActions(transaction, isSuccessful(execution?.outcome)),
+    actions,
   };
 }
 
@@ -78,6 +102,8 @@ export function auditNearTransaction(input) {
   const dataReceiptsValid = Array.isArray(input.data_receipts);
   if (!receiptsValid) diagnostics.push('receipts must be an array');
   if (!dataReceiptsValid) diagnostics.push('data_receipts must be an array');
+
+  const rootActions = transactionActions(transaction, isSuccessful(input.execution_outcome.outcome), diagnostics);
 
   const actionEntries = receiptsValid ? input.receipts : [];
   const dataEntries = dataReceiptsValid ? input.data_receipts : [];
@@ -136,7 +162,7 @@ export function auditNearTransaction(input) {
       executionStatus: outcome?.status ?? null,
       executionStatusName: executionStatusName(outcome),
       logs: Array.isArray(outcome?.logs) ? [...outcome.logs] : (outcome?.logs ?? null),
-      actions: receiptActions(receipt, isSuccessful(outcome)),
+      actions: receiptActions(receipt, isSuccessful(outcome), diagnostics, receiptId),
     });
   }
 
@@ -199,7 +225,7 @@ export function auditNearTransaction(input) {
       receiverId: transaction.receiver_id ?? null,
       status: input.status ?? null,
     },
-    rootExecution: rootProvenance(transaction, input.execution_outcome),
+    rootExecution: rootProvenance(transaction, input.execution_outcome, rootActions),
     actionReceipts,
     dataReceipts,
     graph: { complete: graphComplete, missingIds, duplicateIds, mismatchedIds, orphanIds },

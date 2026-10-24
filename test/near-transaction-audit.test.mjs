@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { auditNearTransaction } from '../src/near-transaction-audit.mjs';
 
 const transaction = {
-  transaction: { hash: 'tx', signer_id: 'alice.near', receiver_id: 'app.near' },
+  transaction: { hash: 'tx', signer_id: 'alice.near', receiver_id: 'app.near', actions: [] },
   execution_outcome: { id: 'tx', outcome: { receipt_ids: ['r1'], logs: [], status: 'SuccessValue' } },
   receipts: [{
     receipt: { receipt_id: 'r1', receipt: { Action: { actions: [] } } },
@@ -27,7 +27,7 @@ const completeReceipt = (id) => ({
 
 test('reports duplicate receipt references as incomplete graph evidence', () => {
   const duplicateReference = {
-    transaction: { hash: 'tx', signer_id: 'alice.near', receiver_id: 'app.near' },
+    transaction: { hash: 'tx', signer_id: 'alice.near', receiver_id: 'app.near', actions: [] },
     execution_outcome: { id: 'tx', outcome: { receipt_ids: ['r1', 'r1'], logs: [], status: 'SuccessValue' } },
     receipts: [completeReceipt('r1')],
     data_receipts: [],
@@ -40,7 +40,7 @@ test('reports duplicate receipt references as incomplete graph evidence', () => 
 
 test('marks malformed raw-log collections partial instead of silently replacing them', () => {
   const malformedLogs = {
-    transaction: { hash: 'tx', signer_id: 'alice.near', receiver_id: 'app.near' },
+    transaction: { hash: 'tx', signer_id: 'alice.near', receiver_id: 'app.near', actions: [] },
     execution_outcome: { id: 'tx', outcome: { receipt_ids: [], logs: 'not-an-array', status: 'SuccessValue' } },
     receipts: [],
     data_receipts: [],
@@ -53,7 +53,7 @@ test('marks malformed raw-log collections partial instead of silently replacing 
 
 test('reports absent receipt references and leaves graph incomplete', () => {
   const missing = {
-    transaction: { hash: 'tx', signer_id: 'alice.near', receiver_id: 'app.near' },
+    transaction: { hash: 'tx', signer_id: 'alice.near', receiver_id: 'app.near', actions: [] },
     execution_outcome: { id: 'tx', outcome: { receipt_ids: ['not-hydrated'], logs: [], status: 'SuccessValue' } },
     receipts: [],
     data_receipts: [],
@@ -65,7 +65,7 @@ test('reports absent receipt references and leaves graph incomplete', () => {
 
 test('reports duplicate, mismatched, and orphan receipt identities', () => {
   const inconsistent = {
-    transaction: { hash: 'tx', signer_id: 'alice.near', receiver_id: 'app.near' },
+    transaction: { hash: 'tx', signer_id: 'alice.near', receiver_id: 'app.near', actions: [] },
     execution_outcome: { id: 'tx', outcome: { receipt_ids: ['r1', 'r1'], logs: [], status: 'SuccessValue' } },
     receipts: [
       { receipt: { receipt_id: 'r1', receipt: { Action: { actions: [] } } }, execution_outcome: { id: 'other', outcome: { status: 'SuccessValue', receipt_ids: [], logs: [] } } },
@@ -83,7 +83,7 @@ test('reports duplicate, mismatched, and orphan receipt identities', () => {
 
 test('does not report native transfers from failed receipts and does not expose call arguments', () => {
   const failed = {
-    transaction: { hash: 'tx', signer_id: 'alice.near', receiver_id: 'app.near' },
+    transaction: { hash: 'tx', signer_id: 'alice.near', receiver_id: 'app.near', actions: [] },
     execution_outcome: { id: 'tx', outcome: { receipt_ids: ['r1'], logs: [], status: 'SuccessValue' } },
     receipts: [{
       receipt: { receipt_id: 'r1', receiver_id: 'token.near', receipt: { Action: { actions: [
@@ -104,7 +104,7 @@ test('does not report native transfers from failed receipts and does not expose 
 
 test('marks absent or malformed required receipt collections partial', () => {
   const malformed = {
-    transaction: { hash: 'tx', signer_id: 'alice.near', receiver_id: 'app.near' },
+    transaction: { hash: 'tx', signer_id: 'alice.near', receiver_id: 'app.near', actions: [] },
     execution_outcome: { id: 'tx', outcome: { receipt_ids: [], logs: [], status: 'SuccessValue' } },
     receipts: 'bad',
     data_receipts: [],
@@ -175,9 +175,64 @@ test('preserves raw success statuses, logs, provenance, and FastNear-shaped data
   assert.doesNotMatch(report.semantics, /payout.*completed|tax.*completed|rewards.*completed/i);
 });
 
+test('requires root transaction actions and diagnoses missing or malformed collections', () => {
+  for (const actions of [undefined, 'invalid']) {
+    const malformed = structuredClone(transaction);
+    if (actions === undefined) delete malformed.transaction.actions;
+    else malformed.transaction.actions = actions;
+    const report = auditNearTransaction(malformed);
+    assert.equal(report.status, 'partial');
+    assert.equal(report.graph.complete, false);
+    assert.match(report.diagnostics.join(' '), /transaction actions must be an array/i);
+  }
+});
+
+test('reports root transaction ft_transfer function calls as call-only without arguments', () => {
+  const withCall = structuredClone(transaction);
+  withCall.transaction.actions = [{ FunctionCall: {
+    method_name: 'ft_transfer', args: 'secret args', deposit: '1',
+  } }];
+  const report = auditNearTransaction(withCall);
+  assert.deepEqual(report.rootExecution.actions, [
+    { type: 'function_call', methodName: 'ft_transfer', observation: 'call_only_not_transfer_proof' },
+  ]);
+  assert.doesNotMatch(JSON.stringify(report), /secret args/);
+});
+
+test('fails closed on invalid fields in successful root and receipt native transfers', () => {
+  const invalidTransfers = [
+    { where: 'root', action: { Transfer: { deposit: '', receiver_id: 'bob.near' } } },
+    { where: 'root', action: { Transfer: { deposit: '1.2', receiver_id: 'bob.near' } } },
+    { where: 'root', action: { Transfer: { deposit: '1' } } },
+    { where: 'root', action: { Transfer: { deposit: '1', receiver_id: '' } } },
+    { where: 'receipt', action: { Transfer: { deposit: '', receiver_id: 'bob.near' } } },
+    { where: 'receipt', action: { Transfer: { deposit: '1.2', receiver_id: 'bob.near' } } },
+    { where: 'receipt', action: { Transfer: { deposit: '1' } } },
+    { where: 'receipt', action: { Transfer: { deposit: '1', receiver_id: '' } } },
+  ];
+  for (const { where, action } of invalidTransfers) {
+    const input = structuredClone(transaction);
+    if (where === 'root') {
+      input.transaction.actions = [action];
+      input.transaction.receiver_id = action.Transfer.receiver_id;
+    }
+    else {
+      input.receipts[0].receipt.receiver_id = action.Transfer.receiver_id;
+      input.receipts[0].receipt.receipt.Action.actions = [action];
+      input.execution_outcome.outcome.receipt_ids = ['r1'];
+      input.receipts[0].execution_outcome.id = 'r1';
+    }
+    const report = auditNearTransaction(input);
+    assert.equal(report.status, 'partial', `${where} transfer ${JSON.stringify(action)}`);
+    const observations = where === 'root' ? report.rootExecution.actions : report.actionReceipts[0].actions;
+    assert.equal(observations[0].observation, 'incomplete_successful_transfer');
+    assert.match(report.diagnostics.join(' '), /native transfer.*(deposit|destination)/i);
+  }
+});
+
 test('keeps malformed and duplicate data receipts visible without corrupting the action graph', () => {
   const report = auditNearTransaction({
-    transaction: { hash: 'tx', receiver_id: 'app.near' },
+    transaction: { hash: 'tx', receiver_id: 'app.near', actions: [] },
     execution_outcome: { id: 'tx', outcome: { receipt_ids: ['r1'], logs: [], status: 'SuccessValue' } },
     receipts: [completeReceipt('r1')],
     data_receipts: [
@@ -195,7 +250,7 @@ test('keeps malformed and duplicate data receipts visible without corrupting the
 
 test('marks malformed action lists partial while retaining receipt provenance', () => {
   const malformedActions = {
-    transaction: { hash: 'tx', signer_id: 'alice.near', receiver_id: 'app.near' },
+    transaction: { hash: 'tx', signer_id: 'alice.near', receiver_id: 'app.near', actions: [] },
     execution_outcome: { id: 'tx', outcome: { receipt_ids: ['r1'], logs: [], status: 'SuccessValue' } },
     receipts: [{
       receipt: { receipt_id: 'r1', receipt: { Action: { actions: 'invalid' } } },
