@@ -36,7 +36,7 @@ if (command === 'near-tx-audit') {
       process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
       if (report.status === 'partial') process.exitCode = 1;
     } catch (error) {
-      fail(`NEAR transaction audit failed: ${error instanceof Error ? error.message : 'provider or input error'}`);
+      fail('NEAR transaction audit failed.');
     }
   }
 } else if (command === 'near-events') {

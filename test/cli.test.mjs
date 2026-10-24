@@ -275,6 +275,25 @@ function runNearAudit(status = 'SuccessValue') {
   }
 }
 
+test('near-tx-audit hides unexpected fetch error details', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'syntropic-near-audit-error-'));
+  try {
+    const preloadPath = join(dir, 'mock-fastnear.mjs');
+    const mockCode = `
+      globalThis.fetch = async () => {
+        throw new Error('SENTINEL_SECRET_fetch_token=do-not-print');
+      };
+    `;
+    writeFileSync(preloadPath, mockCode);
+    const result = spawnSync(process.execPath, ['--import', preloadPath, cli, 'near-tx-audit', 'test-transaction-hash'], { encoding: 'utf8' });
+    assert.equal(result.status, 1);
+    assert.equal(result.stderr, 'NEAR transaction audit failed.\n');
+    assert.doesNotMatch(result.stderr, /SENTINEL_SECRET_fetch_token=do-not-print/);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
 test('near-tx-audit prints valid JSON and observational native transfer evidence', () => {
   const result = runNearAudit();
   assert.equal(result.status, 0, result.stderr);
