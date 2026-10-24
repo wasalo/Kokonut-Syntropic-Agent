@@ -49,6 +49,8 @@ npm run agent -- near-account-events ACCOUNT_ID [RESUME_TOKEN]
 
 `near-account-events ACCOUNT_ID [RESUME_TOKEN]` fetches one FastNear account-event page (20 entries by default), hydrates transaction/receipt execution outcomes in batches of up to 20 hashes, and filters logs to the exact emitting account. It returns `nextResumeToken` for the next page; rerun with that token to continue. A page with missing transaction lookups or rejected account rows is marked `partial` and exits nonzero. Set `FASTNEAR_API_KEY` in the process environment if you have one; the CLI never prints or stores it. Event logs and execution status remain observations: the command does not classify economics, verify payouts, or write to KI.
 
+`docs/decisions/0002-nearly-event-semantic-evidence.md` records a source-hash-anchored interpretation of selected Nearly tax, fee, burn, and holder events. It is documentation only: the raw readers still do not classify events, reconstruct payouts, or reconcile finances, and historical factory, token, and locker releases remain unclassified unless their deployed code is independently mapped.
+
 The example manifest's UUID and hashes are illustrative only, not registered Kokonut identity or approved policy. The Nearly example is a local product-model fixture, not deployable factory input or launch approval. `preview` expects taxable token base units as an integer string.
 
 ## License
